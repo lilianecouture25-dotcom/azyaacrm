@@ -27,7 +27,15 @@ export async function getUserFromRequest(req) {
     return { token, user: null, role: null };
   }
 
-  const { data: roleData } = await admin
+  // Keep the authenticated user's JWT on the role query as well. This makes
+  // the authorization check work reliably with both legacy service_role keys
+  // and the newer Supabase secret-key format, while RLS still limits the
+  // lookup to the signed-in user's own role row.
+  const roleClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: roleData } = await roleClient
     .from("user_roles")
     .select("role, name, email")
     .eq("user_id", userData.user.id)
