@@ -899,7 +899,7 @@ async function doLogin(){
   if(!email||!password){errEl.textContent='Please enter email and password';return;}
   btn.classList.add('loading');btn.textContent='Signing in...';errEl.textContent='';
   const{data,error}=await sb.auth.signInWithPassword({email,password});
-  if(error){errEl.textContent='Invalid email or password';btn.classList.remove('loading');btn.textContent='Sign In';return;}
+  if(error){console.error('[login]',error);errEl.textContent=error.message||'Sign-in failed';btn.classList.remove('loading');btn.textContent='Sign In';return;}
   currentUser=data.user;
   const allowed=await ensureOperatorAccess();
   if(!allowed){btn.classList.remove('loading');btn.textContent='Sign In';return;}
