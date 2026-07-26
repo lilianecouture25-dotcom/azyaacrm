@@ -37,7 +37,7 @@ export async function getUserFromRequest(req) {
   });
   const { data: roleData } = await roleClient
     .from("user_roles")
-    .select("role, name, email")
+    .select("role")
     .eq("user_id", userData.user.id)
     .maybeSingle();
 
