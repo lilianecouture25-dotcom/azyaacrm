@@ -4,8 +4,16 @@ import { getServiceClient } from "./_auth.js";
 export const config = { api: { bodyParser: false } };
 
 async function rawBody(req) {
+  // Shopify signs the exact bytes it sends. Never JSON.stringify a Buffer or
+  // parsed object here because even harmless formatting changes invalidate HMAC.
+  if (req.rawBody !== undefined && req.rawBody !== null) {
+    if (Buffer.isBuffer(req.rawBody)) return req.rawBody.toString("utf8");
+    if (req.rawBody instanceof Uint8Array) return Buffer.from(req.rawBody).toString("utf8");
+    if (typeof req.rawBody === "string") return req.rawBody;
+  }
+  if (Buffer.isBuffer(req.body)) return req.body.toString("utf8");
+  if (req.body instanceof Uint8Array) return Buffer.from(req.body).toString("utf8");
   if (typeof req.body === "string") return req.body;
-  if (req.body && typeof req.body === "object") return JSON.stringify(req.body);
   return new Promise((resolve, reject) => {
     const chunks = [];
     req.on("data", chunk => chunks.push(Buffer.from(chunk)));
