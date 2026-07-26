@@ -1,0 +1,2428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>ARCO CRM</title>
+<script>document.title='ARCO CRM';</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&family=Cairo:wght@400;600;700;800&family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#000;color:#fff;min-height:100vh;overflow-x:hidden}
+
+/* LOGIN */
+#login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:18px;padding:32px}
+.login-card{width:min(360px,100%);background:#0a0a0a;border:1px solid #1a1a1a;border-radius:18px;padding:24px;display:grid;gap:14px}
+.login-logo{font-size:32px;font-weight:900;letter-spacing:-1px;text-align:center}
+.login-logo span{color:#e11d48}
+.login-subtitle{font-size:13px;color:#555;letter-spacing:1px;text-transform:uppercase;text-align:center;margin-bottom:6px}
+.login-input{width:100%;background:#111;border:1px solid #222;color:#fff;font-size:15px;padding:13px 14px;border-radius:12px;outline:none}
+.login-input:focus{border-color:#e11d48}
+.login-btn{background:#e11d48;border:none;color:#fff;padding:13px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer}
+.login-btn.loading{opacity:.7;pointer-events:none}
+.login-error{min-height:18px;color:#e11d48;font-size:13px;text-align:center}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh}
+.app-header{background:#000;border-bottom:1px solid #1a1a1a;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:20px;font-weight:900;letter-spacing:-0.5px}
+.logo span{color:#e11d48}
+.header-actions{display:flex;align-items:center;gap:8px}
+.refresh-btn{background:#111;border:1px solid #222;color:#888;width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.refresh-btn:active{background:#222}
+.logout-btn{background:#111;border:1px solid #222;color:#888;height:34px;border-radius:10px;padding:0 12px;font-size:12px;font-weight:700;cursor:pointer}
+.logout-btn:active{background:#222}
+
+/* Screens */
+.screen{display:none;flex-direction:column;flex:1}
+.screen.active{display:flex}
+
+/* Stats */
+.stats-section{padding:14px 14px 0}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.kpi-card{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:14px;padding:14px}
+.kpi-card.total{grid-column:1/-1;border-color:#e11d48}
+.kpi-card.rate{border-color:#e11d4855}
+.kpi-label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.kpi-label .dot{width:6px;height:6px;border-radius:50%;background:#e11d48}
+.kpi-value{font-size:28px;font-weight:800;color:#fff;line-height:1}
+.kpi-card.total .kpi-value{font-size:32px;color:#e11d48}
+.kpi-card.rate .kpi-value{font-size:22px;color:#e11d48}
+.chart-wrap{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:14px;padding:16px;margin-bottom:16px}
+.chart-title{font-size:12px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.chart-inner{display:flex;align-items:center;gap:16px}
+#donut-svg{flex-shrink:0}
+.chart-legend{display:flex;flex-direction:column;gap:7px;flex:1}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:12px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-label{color:#888;flex:1}
+.legend-val{color:#fff;font-weight:600}
+
+/* Filters — always visible */
+.filters-bar{padding:10px 14px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid #1a1a1a;background:#000}
+.search-bar{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:12px;padding:11px 14px;color:#fff;font-size:14px;width:100%;outline:none}
+.search-bar::placeholder{color:#444}
+.search-bar:focus{border-color:#e11d48}
+.filters-row{display:flex;flex-direction:column;gap:8px}
+.filter-select{flex:1;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:12px;padding:10px 12px;color:#fff;font-size:13px;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.filter-select:focus{border-color:#e11d48}
+.custom-date-row{display:none;gap:8px}
+.custom-date-row.show{display:flex}
+.date-input{flex:1;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:12px;padding:10px 12px;color:#fff;font-size:13px;outline:none;color-scheme:dark}
+.date-input:focus{border-color:#e11d48}
+
+/* Tab Bar */
+.tab-bar{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid #1a1a1a;display:flex;overflow-x:auto;padding:8px 8px 20px;gap:6px;z-index:100;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1px solid #222;background:#0a0a0a;color:#555;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s}
+.tab-btn.active{background:#e11d48;border-color:#e11d48;color:#fff}
+.tab-count{background:rgba(255,255,255,.15);border-radius:10px;padding:1px 6px;margin-left:4px;font-size:10px}
+.tab-btn.active .tab-count{background:rgba(0,0,0,.25)}
+
+/* Orders */
+.orders-toolbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px;gap:8px;flex-wrap:wrap}
+.toolbar-left{display:flex;align-items:center;gap:8px}
+.sort-btn{background:#111;border:1px solid #222;color:#ccc;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.sort-btn:active{background:#222}
+.orders-count{font-size:12px;color:#555}
+.page-size-select{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:10px;padding:7px 10px;color:#fff;font-size:12px;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer}
+.page-size-select:focus{border-color:#e11d48}
+
+.bulk-bar{display:none;padding:10px 14px;background:#0a0a0a;border-bottom:1px solid #1a1a1a;align-items:center;gap:10px}
+.bulk-bar.show{display:flex}
+.select-all-btn{background:#111;border:1px solid #333;color:#fff;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
+.bulk-ship-btn{flex:1;background:#3b82f6;border:none;color:#fff;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.bulk-ship-btn:active{opacity:.8}
+.bulk-count{font-size:12px;color:#888}
+.orders-scroll{flex:1;overflow-y:auto;padding:6px 14px 0}
+
+/* Pagination */
+.pagination{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;border-top:1px solid #1a1a1a;margin-bottom:80px}
+.page-btn{background:#111;border:1px solid #222;color:#fff;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
+.page-btn:disabled{opacity:.3;cursor:not-allowed}
+.page-btn.active{background:#e11d48;border-color:#e11d48}
+.page-info{font-size:12px;color:#555}
+
+/* Order Card */
+.order-card{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:14px;padding:14px;margin-bottom:10px}
+.order-card.selected{border-color:#e11d48}
+.card-top-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.card-checkbox{width:20px;height:20px;border-radius:6px;border:2px solid #333;background:#111;cursor:pointer;flex-shrink:0;display:none;align-items:center;justify-content:center;margin-top:2px}
+.card-checkbox.visible{display:flex}
+.card-checkbox.checked{background:#e11d48;border-color:#e11d48}
+.card-checkbox.checked::after{content:'?';font-size:12px;color:#fff;font-weight:800}
+.card-main{flex:1;cursor:pointer}
+.card-name-price{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.order-name{font-size:15px;font-weight:700}
+.order-price{font-size:15px;font-weight:800;color:#e11d48}
+.order-meta{font-size:12px;color:#555;line-height:1.8}
+.order-meta b{color:#888}
+.source-badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.4px;margin-inline-start:5px;border:1px solid rgba(255,255,255,.12)}
+.source-meta{color:#8ab4ff;background:rgba(66,133,244,.12);border-color:rgba(66,133,244,.28)}
+.source-tiktok{color:#ff7eb3;background:rgba(255,45,142,.12);border-color:rgba(255,45,142,.28)}
+.source-organic{color:#86efac;background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.24)}
+.source-direct{color:#d1d5db;background:rgba(156,163,175,.1)}
+.source-operator{color:#c4b5fd;background:rgba(139,92,246,.12);border-color:rgba(139,92,246,.28)}
+.source-other,.source-unknown{color:#fbbf24;background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.24)}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:6px}
+.card-actions{display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap}
+.btn-call-sm{background:#e11d48;color:#fff;border:none;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-call-sm:active{opacity:.8}
+.btn-wa-sm{background:#25d366;color:#fff;border:none;width:38px;height:38px;border-radius:10px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-wa-sm:active{opacity:.8}
+.card-status-select{flex:1;min-width:120px;background:#111;border:1px solid #333;color:#fff;font-size:13px;font-weight:600;padding:9px 10px;border-radius:10px;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer}
+.card-status-select:focus{border-color:#e11d48}
+.btn-ship-sm{background:#3b82f6;color:#fff;border:none;padding:9px 14px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-ship-sm:active{opacity:.8}
+.btn-detail{background:#111;border:1px solid #222;color:#555;padding:9px 12px;border-radius:10px;font-size:13px;cursor:pointer}
+
+/* Status colors */
+ .s-draft{background:#14161f;color:#c4b5fd;border:1px solid #8b5cf633}
+ .s-pending{background:#1a1200;color:#f59e0b;border:1px solid #f59e0b33}
+.s-to_recall{background:#1a0f00;color:#fb923c;border:1px solid #fb923c33}
+.s-attempt_1{background:#1a0800;color:#f97316;border:1px solid #f9731633}
+.s-attempt_2{background:#1a0500;color:#ea580c;border:1px solid #ea580c33}
+.s-attempt_3{background:#150000;color:#dc2626;border:1px solid #dc262633}
+.s-rescheduled{background:#001a1a;color:#06b6d4;border:1px solid #06b6d433}
+.s-confirmed{background:#00051a;color:#3b82f6;border:1px solid #3b82f633}
+.s-shipped{background:#0a001a;color:#8b5cf6;border:1px solid #8b5cf633}
+.s-delivered{background:#001a08;color:#22c55e;border:1px solid #22c55e33}
+.s-canceled{background:#1a0000;color:#e11d48;border:1px solid #e11d4833}
+.s-not_delivered{background:#1a0000;color:#ef4444;border:1px solid #ef444433}
+.s-duplicated{background:#111;color:#71717a;border:1px solid #71717a33}
+
+/* Detail */
+.detail-scroll{flex:1;overflow-y:auto;padding:14px 14px 100px}
+.back-btn{background:none;border:none;color:#e11d48;font-size:15px;font-weight:600;cursor:pointer;padding:0;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+.detail-section{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:14px;padding:14px;margin-bottom:12px}
+.detail-section-title{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.customer-name-big{font-size:22px;font-weight:800;margin-bottom:4px}
+.customer-location{font-size:14px;color:#888;margin-bottom:12px}
+.phone-row{display:flex;align-items:center;gap:10px}
+.phone-number{font-size:16px;font-weight:600;flex:1}
+.btn-call{background:#e11d48;color:#fff;border:none;padding:10px 18px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
+.btn-call:active{opacity:.8}
+.btn-whatsapp{background:#25d366;color:#fff;border:none;width:42px;height:42px;border-radius:12px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-whatsapp:active{opacity:.8}
+.price-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #111;font-size:14px}
+.price-row:last-child{border-bottom:none;font-weight:800;font-size:16px;color:#e11d48}
+.price-label{color:#888}
+.status-dropdown{width:100%;background:#111;border:1px solid #333;color:#fff;font-size:15px;font-weight:600;padding:12px 14px;border-radius:12px;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer}
+.status-dropdown:focus{border-color:#e11d48}
+.note-field{width:100%;background:#111;border:1px solid #222;color:#fff;font-size:14px;padding:12px;border-radius:12px;outline:none;resize:none;min-height:90px;font-family:inherit}
+.note-field:focus{border-color:#e11d48}
+.save-note-btn{width:100%;background:#e11d48;color:#fff;border:none;padding:12px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px}
+.save-note-btn:active{opacity:.8}
+.ship-btn{width:100%;background:#3b82f6;color:#fff;border:none;padding:13px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px}
+.ship-btn:active{opacity:.8}
+.track-btn{width:100%;background:#8b5cf6;color:#fff;border:none;padding:13px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:8px}
+.track-btn:active{opacity:.8}
+.action-row{display:flex;gap:10px;margin-top:4px}
+.btn-delete{flex:1;background:#1a0000;border:1px solid #e11d4855;color:#e11d48;padding:13px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
+.btn-delete:active{background:#e11d48;color:#fff}
+.btn-edit{flex:1;background:#111;border:1px solid #333;color:#fff;padding:13px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
+.btn-edit:active{background:#222}
+.detail-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.order-num{font-size:13px;color:#444;font-weight:600}
+.history-btn{background:#111;border:1px solid #222;color:#888;padding:9px 16px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer}
+
+/* Modals */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:20px 20px 0 0;width:100%;max-height:75vh;overflow-y:auto;padding:20px}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:#555;font-size:22px;cursor:pointer;line-height:1}
+.history-item{padding:12px 0;border-bottom:1px solid #111;font-size:13px}
+.history-item:last-child{border-bottom:none}
+.history-arrow{color:#e11d48;font-weight:700;margin:0 6px}
+.history-time{color:#444;font-size:11px;margin-top:4px}
+.history-type{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:4px}
+.history-type.status{background:#e11d4822;color:#e11d48}
+.history-type.field{background:#3b82f622;color:#3b82f6}
+
+/* Edit Modal */
+.edit-modal{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:20px}
+.edit-field{margin-bottom:12px}
+.edit-label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.edit-input,.edit-select{width:100%;background:#111;border:1px solid #222;color:#fff;font-size:14px;padding:11px 12px;border-radius:12px;outline:none;font-family:inherit;appearance:none;-webkit-appearance:none}
+.edit-input:focus,.edit-select:focus{border-color:#e11d48}
+.price-fields{display:flex;gap:8px}
+.price-fields .edit-field{flex:1;margin-bottom:0}
+.total-display{background:#111;border:1px solid #333;border-radius:12px;padding:11px 12px;font-size:15px;font-weight:800;color:#e11d48;text-align:center;margin-bottom:12px}
+.edit-save-btn{width:100%;background:#e11d48;color:#fff;border:none;padding:13px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px}
+
+/* Toast */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#111;border:1px solid #333;color:#fff;padding:10px 22px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:300;white-space:nowrap}
+#toast.show{opacity:1}
+#toast.err{background:#1a0000;border-color:#e11d48;color:#e11d48}
+.empty-wrap{display:flex;align-items:center;justify-content:center;padding:60px;color:#333;font-size:14px;flex-direction:column;gap:8px}
+/* Duplicate warning banner */
+.dup-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:10px 14px;margin:0 14px 8px;font-size:12px;color:#f59e0b;display:flex;align-items:flex-start;gap:8px}
+.dup-banner b{font-weight:700}
+.dup-banner-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+
+/* ── Searchable product dropdown ── */
+.prod-dropdown-wrap{position:relative;flex:1}
+.prod-picker-control{display:flex;align-items:center;gap:7px}
+.prod-picker-thumb{width:34px;height:34px;flex:0 0 34px;border-radius:7px;overflow:hidden;background:#111;border:1px solid #333;display:grid;place-items:center}
+.prod-picker-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.prod-picker-thumb:has(img){cursor:zoom-in}
+.prod-search-input{width:100%;min-width:0;flex:1;box-sizing:border-box;background:#1a1a1a;color:#ddd;border:1px solid #333;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit}
+.prod-search-input:focus{outline:none;border-color:#F5C500}
+.prod-dropdown-list{display:none;position:absolute;z-index:9999;top:100%;left:0;right:0;background:#1a1a1a;border:1px solid #333;border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;margin-top:2px}
+.prod-dropdown-list.open{display:block}
+.prod-dropdown-item{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:13px;cursor:pointer;color:#ddd;border-bottom:1px solid #111}
+.prod-dropdown-item img{width:34px;height:34px;flex:0 0 34px;object-fit:cover;border-radius:6px;background:#111}
+.prod-dropdown-item span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prod-dropdown-item:hover,.prod-dropdown-item.active{background:#F5C500;color:#000}
+.product-image-preview{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.78);display:grid;place-items:center;padding:24px;cursor:zoom-out}
+.product-image-preview[hidden]{display:none}
+.product-image-preview img{max-width:min(88vw,520px);max-height:78vh;object-fit:contain;border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.65);cursor:default}
+</style>
+<style>
+:root{
+  /* Pink → purple accent system on dark */
+  --arco-pink:#ff2d8e;
+  --arco-pink-soft:#ff6ab5;
+  --arco-purple:#a855f7;
+  --arco-purple-deep:#7c3aed;
+  --arco-accent:#ff2d8e;            /* primary single-color accent (was yellow) */
+  --arco-grad:linear-gradient(135deg,#ff2d8e 0%,#c026d3 52%,#8b5cf6 100%);
+  --arco-grad-soft:linear-gradient(135deg,#ff6ab5,#a855f7);
+  --arco-black:#080810;
+  --arco-dark:#111119;
+  --arco-red:#e11d48;
+  --arco-green:#22c55e;
+  --arco-line:rgba(255,255,255,.08);
+  --arco-line-strong:rgba(255,45,142,.32);
+  --arco-panel:linear-gradient(180deg, rgba(255,255,255,.045), rgba(17,17,25,.96));
+  --arco-shadow:0 18px 44px rgba(0,0,0,.42);
+  --arco-glow:0 0 24px rgba(255,45,142,.28);
+}
+body{
+  font-family:'Cairo',sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(255,45,142,.14), transparent 26%),
+    radial-gradient(circle at 100% 10%, rgba(139,92,246,.14), transparent 24%),
+    radial-gradient(circle at 50% 120%, rgba(192,38,211,.10), transparent 40%),
+    linear-gradient(180deg, #080810 0%, #0b0b13 38%, #101019 100%);
+  color:#f8f8f8;
+}
+button,input,select,textarea{font:inherit}
+#login-screen{position:relative}
+#login-screen:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 24% 18%, rgba(255,45,142,.14), transparent 20%),
+    radial-gradient(circle at 80% 26%, rgba(139,92,246,.12), transparent 16%);
+}
+.login-card,.kpi-card,.chart-wrap,.order-card,.detail-section,.modal,.edit-modal{
+  background:var(--arco-panel);
+  border-color:var(--arco-line);
+  box-shadow:var(--arco-shadow);
+}
+.login-card{
+  width:min(400px,100%);
+  border-radius:28px;
+  padding:30px 24px 24px;
+}
+.login-logo,.logo{
+  font-family:'Bebas Neue',sans-serif;
+  letter-spacing:.08em;
+}
+.login-logo{font-size:3rem;line-height:.92}
+.logo{font-size:2rem;line-height:.9}
+.login-logo span,.logo span,.kpi-card.total .kpi-value,.kpi-card.rate .kpi-value,.order-price,.price-row:last-child,.total-display,.history-arrow,.back-btn{
+  color:transparent;
+  background:var(--arco-grad);
+  -webkit-background-clip:text;
+  background-clip:text;
+}
+.login-subtitle{
+  font-family:'Barlow Condensed',sans-serif;
+  color:#a3a3a3;
+  letter-spacing:.18em;
+  margin-bottom:10px;
+}
+.login-input,.search-bar,.filter-select,.date-input,.page-size-select,.card-status-select,.status-dropdown,.note-field,.edit-input,.edit-select,.total-display{
+  background:rgba(255,255,255,.04);
+  border-color:var(--arco-line);
+  border-radius:14px;
+}
+.login-input,.search-bar,.note-field,.edit-input{padding:14px 15px}
+.filter-select,.date-input,.page-size-select,.card-status-select,.status-dropdown,.edit-select{padding:10px 12px}
+.login-input:focus,.search-bar:focus,.filter-select:focus,.date-input:focus,.page-size-select:focus,.card-status-select:focus,.status-dropdown:focus,.note-field:focus,.edit-input:focus,.edit-select:focus{
+  border-color:var(--arco-line-strong);
+  box-shadow:0 0 0 3px rgba(255,45,142,.12);
+}
+.login-btn,.btn-call-sm,.btn-call,.save-note-btn,.ship-btn,.bulk-ship-btn,.edit-save-btn,.tab-btn.active,.page-btn.active{
+  background:var(--arco-grad);
+  border-color:transparent;
+  color:#fff;
+}
+.login-btn,.btn-call-sm,.btn-call,.save-note-btn,.ship-btn,.bulk-ship-btn,.edit-save-btn,.logout-btn,.tab-btn,.sort-btn{
+  font-family:'Barlow Condensed',sans-serif;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.app-header,.filters-bar,.tab-bar{
+  background:rgba(8,8,8,.84);
+  backdrop-filter:blur(16px);
+  border-color:var(--arco-line);
+}
+.refresh-btn,.logout-btn,.sort-btn,.select-all-btn,.page-btn,.history-btn,.btn-detail,.btn-edit{
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--arco-line);
+  color:#ddd;
+}
+.refresh-btn,.logout-btn,.sort-btn,.select-all-btn,.page-btn,.history-btn,.btn-detail,.btn-edit,.btn-wa-sm,.btn-call-sm,.btn-ship-sm,.btn-delete,.save-note-btn,.ship-btn,.track-btn,.edit-save-btn,.login-btn{
+  border-radius:14px;
+}
+.refresh-btn,.logout-btn{height:38px}
+.refresh-btn{width:38px}
+.logout-btn{padding:0 14px}
+.filters-bar,.pagination{border-color:var(--arco-line)}
+.tab-btn{
+  border-radius:999px;
+  background:rgba(255,255,255,.04);
+  border-color:var(--arco-line);
+  color:#8f8f8f;
+}
+.tab-btn.active .tab-count{background:rgba(8,8,8,.18)}
+.orders-count,.page-info,.kpi-label,.chart-title,.edit-label{color:#9f9f9f}
+.bulk-bar{background:rgba(255,255,255,.03);border-color:var(--arco-line)}
+.select-all-btn{border-radius:12px}
+.bulk-count,.customer-location,.price-label,.legend-label,.order-meta{color:#b7b7b7}
+.btn-ship-sm{
+  background:rgba(255,45,142,.12);
+  border:1px solid rgba(255,45,142,.32);
+  color:var(--arco-pink-soft);
+}
+.btn-detail,.history-btn{color:#c7c7c7}
+.btn-whatsapp,.btn-wa-sm{background:var(--arco-green)}
+.btn-delete{
+  background:#1a0000;
+  border:1px solid rgba(225,29,72,.35);
+  color:#ff7899;
+}
+.history-type.status{
+  background:rgba(255,45,142,.16);
+  color:var(--arco-pink-soft);
+}
+.history-type.field{background:#3b82f622;color:#8db2ff}
+#toast{
+  background:#161616;
+  border-color:var(--arco-line-strong);
+  box-shadow:var(--arco-shadow);
+}
+#toast.err{background:#1a0000;border-color:rgba(225,29,72,.45);color:#ff7f9f}
+.empty-wrap{color:#5e5e5e}
+
+/* ============ PINK REDESIGN v2 : compact KPIs, card notes, timestamp, call badge ============ */
+
+/* Sweep remaining red base-accents to the new accent */
+.login-input:focus,.search-bar:focus,.filter-select:focus,.date-input:focus,.page-size-select:focus,.card-status-select:focus,.status-dropdown:focus,.note-field:focus,.edit-input:focus,.edit-select:focus{border-color:var(--arco-line-strong)}
+.order-card.selected{border-color:var(--arco-pink)!important;box-shadow:0 0 0 1px rgba(255,45,142,.5),var(--arco-shadow)}
+.card-checkbox.checked{background:var(--arco-grad)!important;border-color:transparent!important}
+.card-checkbox.checked::after{content:'\2713';font-size:12px;color:#fff;font-weight:800}
+.tab-btn.active{box-shadow:var(--arco-glow)}
+
+/* Headings font upgrade */
+.customer-name-big,.modal-title,.total-display{font-family:'Barlow Condensed',sans-serif;letter-spacing:.01em}
+
+/* ---- Compact KPI grid : 4 per line, small squares, big numbers ---- */
+.stats-section{padding:10px 10px 0}
+.kpi-grid{grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.kpi-card{padding:6px 4px;border-radius:12px;aspect-ratio:1/1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px;overflow:hidden}
+.kpi-card.total{grid-column:1/-1;aspect-ratio:auto;padding:12px 16px;flex-direction:row;justify-content:space-between;
+  border:1px solid transparent;
+  background:linear-gradient(180deg,rgba(255,45,142,.10),rgba(139,92,246,.06)) padding-box,var(--arco-grad) border-box;}
+.kpi-label{font-size:7.5px;letter-spacing:.2px;margin-bottom:0;gap:3px;justify-content:center;text-align:center;line-height:1.1;color:#9a9aab;text-transform:uppercase;font-weight:700}
+.kpi-card.total .kpi-label{justify-content:flex-start;font-size:10px}
+.kpi-label .dot{width:4px;height:4px;flex-shrink:0}
+/* Big number that fills the square */
+.kpi-value{font-size:30px;font-weight:800;font-family:'Fredoka',sans-serif;line-height:.9}
+.kpi-card.total .kpi-value{font-size:34px;color:#ffffff!important;background:none!important;-webkit-background-clip:initial!important;background-clip:initial!important}
+.kpi-card.rate{grid-column:auto}
+.kpi-card.rate .kpi-value{font-size:20px}
+.kpi-sub{display:none}
+.kpi-card.rate .kpi-sub{display:none}
+/* very narrow phones: keep 4 but shrink number a touch */
+@media(max-width:340px){.kpi-value{font-size:25px}.kpi-card.rate .kpi-value{font-size:17px}}
+
+/* ---- Order card polish ---- */
+.order-card{border-radius:16px;transition:border-color .18s,transform .18s}
+.order-card:active{transform:scale(.996)}
+.order-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;letter-spacing:.01em}
+.order-price{font-size:15px;font-weight:800}
+
+/* Timestamp chip on card */
+.card-time{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#9a9aab;
+  background:rgba(255,255,255,.04);border:1px solid var(--arco-line);border-radius:999px;
+  padding:2px 9px;margin-top:8px}
+.card-time svg{width:11px;height:11px;opacity:.8}
+
+/* Call button + count badge */
+.btn-call-sm{position:relative;overflow:visible}
+.call-badge{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 4px;
+  border-radius:999px;background:#fff;color:#c026d3;font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);border:1.5px solid #c026d3}
+
+/* Inline note on card */
+.card-note-wrap{margin-top:10px}
+.card-note-label{font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:#7d7d8e;
+  margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.card-note{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--arco-line);
+  border-radius:11px;padding:9px 11px;color:#f0f0f5;font-size:13px;font-family:inherit;
+  resize:none;outline:none;min-height:38px;line-height:1.4;transition:border-color .18s,box-shadow .18s}
+.card-note::placeholder{color:#55555f}
+.card-note:focus{border-color:var(--arco-line-strong);box-shadow:0 0 0 3px rgba(255,45,142,.10)}
+.card-note.saved{border-color:rgba(34,197,94,.5)}
+
+/* ============================================================
+   PLAYFUL + VIBRANT REDESIGN  (pink→purple, rounded, glowy)
+   ============================================================ */
+
+body{font-family:'Plus Jakarta Sans','Cairo',sans-serif}
+
+/* floating blobs behind everything for depth */
+#app::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(38vw 38vw at 12% -4%, rgba(255,45,142,.16), transparent 60%),
+    radial-gradient(42vw 42vw at 100% 8%, rgba(168,85,247,.15), transparent 62%),
+    radial-gradient(50vw 40vw at 50% 118%, rgba(192,38,211,.12), transparent 60%);
+  animation:blobFloat 14s ease-in-out infinite alternate;
+}
+@keyframes blobFloat{from{transform:translateY(0)}to{transform:translateY(-18px)}}
+
+/* rounder everything */
+.order-card,.detail-section,.chart-wrap,.modal,.edit-modal,.login-card{border-radius:22px}
+.kpi-card{border-radius:18px}
+
+/* ---- Header ---- */
+.app-header{padding:14px 16px;border-bottom:none;
+  background:linear-gradient(180deg,rgba(12,12,20,.92),rgba(12,12,20,.62));
+  backdrop-filter:blur(20px)}
+.logo{font-family:'Fredoka',sans-serif;font-weight:700;font-size:1.85rem;letter-spacing:.02em}
+.refresh-btn,.logout-btn{border-radius:14px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);transition:transform .15s,background .15s}
+.refresh-btn:active,.logout-btn:active{transform:scale(.9)}
+
+/* ---- Tabs: bouncy pills ---- */
+.tab-bar{padding:10px 10px 22px;gap:7px;background:linear-gradient(0deg,rgba(10,10,16,.96),rgba(10,10,16,.7))}
+.tab-btn{border-radius:999px;padding:8px 15px;font-weight:700;font-size:12px;
+  border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045);color:#a7a7b8;
+  transition:transform .15s ease,box-shadow .2s,color .2s}
+.tab-btn:active{transform:scale(.93)}
+.tab-btn.active{background:var(--arco-grad);color:#fff;border-color:transparent;
+  box-shadow:0 6px 18px rgba(255,45,142,.45),0 0 0 1px rgba(255,255,255,.12) inset;transform:translateY(-1px)}
+.tab-count{background:rgba(255,255,255,.16);border-radius:999px;padding:1px 7px;font-size:10px;font-weight:800}
+.tab-btn.active .tab-count{background:rgba(0,0,0,.22)}
+
+/* ---- KPI cards: glow + gradient value ---- */
+.kpi-card{background:linear-gradient(160deg,rgba(255,255,255,.055),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.08);transition:transform .18s,box-shadow .2s;position:relative;overflow:hidden}
+.kpi-card:active{transform:scale(.97)}
+.kpi-card:not(.total) .kpi-value{color:transparent;background:var(--arco-grad-soft);
+  -webkit-background-clip:text;background-clip:text}
+.kpi-card.total{box-shadow:0 10px 30px rgba(255,45,142,.28)}
+.kpi-card.total .kpi-label{color:rgba(255,255,255,.85);font-weight:700}
+
+/* ---- Order cards: status edge strip + glow on press ---- */
+.order-card{position:relative;overflow:hidden;padding-left:18px;
+  background:linear-gradient(165deg,rgba(255,255,255,.05),rgba(20,20,30,.96));
+  border:1px solid rgba(255,255,255,.07);transition:transform .16s,box-shadow .2s,border-color .2s}
+.order-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;
+  background:var(--strip,var(--arco-pink));box-shadow:0 0 14px var(--strip,var(--arco-pink))}
+.order-card:active{transform:scale(.994)}
+.order-card.selected{box-shadow:0 0 0 2px var(--arco-pink),0 10px 30px rgba(255,45,142,.3)}
+.order-name{font-family:'Fredoka',sans-serif;font-weight:600;font-size:17px}
+.order-price{font-weight:800;font-size:16px}
+
+/* status badge — brighter, pill, glow */
+.status-badge{padding:4px 12px;border-radius:999px;font-weight:800;font-size:10.5px;
+  letter-spacing:.5px;backdrop-filter:blur(4px)}
+
+/* ---- Buttons: springy ---- */
+.btn-call-sm,.btn-ship-sm,.btn-detail,.btn-wa-sm,.card-status-select,
+.btn-call,.ship-btn,.track-btn,.save-note-btn,.edit-save-btn,.login-btn,.bulk-ship-btn{
+  transition:transform .14s ease,box-shadow .2s,filter .2s}
+.btn-call-sm:active,.btn-ship-sm:active,.btn-detail:active,.btn-wa-sm:active,
+.btn-call:active,.ship-btn:active,.track-btn:active,.save-note-btn:active,
+.edit-save-btn:active,.login-btn:active,.bulk-ship-btn:active{transform:scale(.92)}
+.btn-call-sm{box-shadow:0 6px 16px rgba(255,45,142,.4)}
+.btn-call-sm,.btn-detail{border-radius:13px}
+.btn-wa-sm{border-radius:13px;box-shadow:0 6px 16px rgba(37,211,102,.35)}
+
+/* ---- Login glow ---- */
+.login-logo{font-family:'Fredoka',sans-serif;font-weight:700}
+.login-card{box-shadow:0 24px 70px rgba(255,45,142,.18),0 0 0 1px rgba(255,255,255,.06)}
+.login-btn{box-shadow:0 10px 26px rgba(255,45,142,.45)}
+
+/* ---- Search/filter pills ---- */
+.search-bar,.filter-select,.date-input{border-radius:15px}
+.filters-bar{background:linear-gradient(180deg,rgba(10,10,16,.9),rgba(10,10,16,.55));backdrop-filter:blur(16px)}
+
+/* toast rounder + glow */
+#toast{border-radius:999px;box-shadow:0 10px 30px rgba(255,45,142,.3);border-color:var(--arco-line-strong)}
+
+/* chart card */
+.chart-wrap{background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(20,20,30,.95))}
+.chart-title{font-family:'Fredoka',sans-serif;font-weight:600;letter-spacing:.02em;color:#c9c9d6}
+
+/* ============================================================
+   DETAIL AS POPUP MODAL (sticky always-visible close button)
+   ============================================================ */
+#screen-detail{position:fixed;inset:0;z-index:250;display:none;
+  align-items:flex-end;justify-content:center;
+  background:rgba(4,4,10,.66);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  padding:0}
+#screen-detail.active{display:flex;animation:detailFade .18s ease}
+@keyframes detailFade{from{opacity:0}to{opacity:1}}
+.detail-sheet{width:100%;max-width:640px;max-height:92vh;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#14141d,#0c0c14);
+  border:1px solid rgba(255,255,255,.09);border-bottom:none;
+  border-radius:26px 26px 0 0;overflow:hidden;
+  box-shadow:0 -18px 60px rgba(255,45,142,.18),0 -2px 0 rgba(255,255,255,.05) inset;
+  animation:sheetUp .26s cubic-bezier(.2,.9,.25,1)}
+@keyframes sheetUp{from{transform:translateY(40px)}to{transform:translateY(0)}}
+/* Sticky header — always visible, never hidden by Chrome bar (it's inside the sheet, at its top) */
+.detail-header{position:sticky;top:0;z-index:2;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px 16px;
+  background:linear-gradient(180deg,rgba(20,20,30,.98),rgba(20,20,30,.86));
+  backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.07)}
+.detail-back{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;font-size:15px;
+  padding:9px 16px;border-radius:13px;cursor:pointer;display:flex;align-items:center;gap:4px;
+  transition:transform .14s}
+.detail-back span{font-size:20px;line-height:1;margin-top:-1px}
+.detail-back:active{transform:scale(.92)}
+.detail-x{width:40px;height:40px;flex-shrink:0;border-radius:13px;cursor:pointer;
+  background:var(--arco-grad);border:none;color:#fff;font-size:22px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px rgba(255,45,142,.4);transition:transform .14s}
+.detail-x:active{transform:scale(.9)}
+/* body scrolls inside the sheet, header stays put */
+#screen-detail .detail-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;padding:14px 14px 40px}
+
+/* ============================================================
+   EDIT / HISTORY MODAL FIXES (sticky X, no scroll-behind, above detail)
+   ============================================================ */
+/* sit above the detail popup (z-index 250) so Edit opens on top */
+.modal-overlay{z-index:400;align-items:flex-end;justify-content:center}
+.modal-overlay .modal,.modal-overlay .edit-modal{
+  max-width:640px;
+  border-radius:26px 26px 0 0;
+  /* leave a safe gap at the very top so the sheet never sits under the Chrome bar */
+  max-height:88vh;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  padding:0 20px 24px}
+/* Sticky title bar with the X — stays pinned at the sheet's top while the body scrolls */
+.modal-overlay .modal-title,.modal-overlay .edit-modal .modal-title{
+  position:sticky;top:0;z-index:3;margin:0 -20px 14px;padding:16px 20px;
+  background:linear-gradient(180deg,rgba(20,20,30,.99),rgba(20,20,30,.9));
+  backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08);
+  font-family:'Fredoka',sans-serif}
+.modal-close{background:var(--arco-grad);color:#fff;width:36px;height:36px;border-radius:11px;
+  font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 6px 16px rgba(255,45,142,.4);transition:transform .14s}
+.modal-close:active{transform:scale(.9)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+  <div class="login-logo">ARCO <span>CRM</span></div>
+  <div class="login-subtitle">Operator Access</div>
+  <input class="login-input" id="login-email" type="email" autocomplete="email" placeholder="Email">
+  <input class="login-input" id="login-password" type="password" autocomplete="current-password" placeholder="Password">
+  <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+  <div class="login-error" id="login-error"></div>
+  <div id="pin-dots" style="display:none" hidden>
+    <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-error" id="pin-error" hidden></div>
+  <div class="pin-pad" style="display:none" hidden>
+    <button class="pin-key" onclick="pinPress('1')">1</button>
+    <button class="pin-key" onclick="pinPress('2')">2</button>
+    <button class="pin-key" onclick="pinPress('3')">3</button>
+    <button class="pin-key" onclick="pinPress('4')">4</button>
+    <button class="pin-key" onclick="pinPress('5')">5</button>
+    <button class="pin-key" onclick="pinPress('6')">6</button>
+    <button class="pin-key" onclick="pinPress('7')">7</button>
+    <button class="pin-key" onclick="pinPress('8')">8</button>
+    <button class="pin-key" onclick="pinPress('9')">9</button>
+    <button class="pin-key" onclick="pinPress('0')" style="grid-column:2">0</button>
+    <button class="pin-key del" onclick="pinDel()">Del</button>
+  </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="app-header">
+    <div class="logo">ARCO <span>CRM</span></div>
+    <div class="header-actions">
+    <button class="refresh-btn" onclick="refreshAll()">R</button>
+    <button class="logout-btn" id="track-orders-btn" onclick="runNoestTracker()">Track Noest</button>
+      <button class="logout-btn" onclick="promptSetTarget()" style="background:rgba(255,45,142,0.15);border:1px solid rgba(255,45,142,0.35);color:#ff2d8e">🎯 Target</button>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Main screen (stats + orders) -->
+  <div class="screen active" id="screen-main">
+
+    <!-- Stats — only visible on "all" tab -->
+    <div id="stats-section" class="stats-section">
+      <!-- Daily Target Tracker -->
+      <div id="daily-target-banner" style="margin-bottom:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,45,142,0.25);border-radius:16px;padding:12px 16px;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#888">DAILY TARGET</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span id="target-count" style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#ff2d8e">0/0</span>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:99px;height:6px;overflow:hidden">
+          <div id="target-bar" style="height:100%;border-radius:99px;background:linear-gradient(135deg,#ff2d8e,#a855f7);transition:width 0.4s;width:0%"></div>
+        </div>
+        <div id="target-msg" style="font-size:11px;color:#666;margin-top:6px;text-align:center"></div>
+      </div>
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <div class="chart-wrap">
+        <div class="chart-title">Order Distribution</div>
+        <div class="chart-inner">
+          <svg id="donut-svg" width="120" height="120" viewBox="0 0 120 120"></svg>
+          <div class="chart-legend" id="chart-legend"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters — ALWAYS visible -->
+    <div class="filters-bar">
+      <input class="search-bar" id="search-input" placeholder="Search by name or phone..." oninput="onFilterChange()"/>
+      <div class="filters-row">
+        <select class="filter-select" id="filter-product" onchange="onFilterChange()">
+          <option value="">All Products</option>
+        </select>
+        <select class="filter-select" id="filter-source" onchange="onFilterChange()">
+          <option value="">All Sources</option>
+          <option value="meta">Meta</option>
+          <option value="tiktok">TikTok</option>
+          <option value="organic">Organic</option>
+          <option value="direct">Direct</option>
+          <option value="operator">Operator</option>
+          <option value="unknown">Unknown</option>
+        </select>
+        <select class="filter-select" id="filter-period" onchange="onPeriodChange()">
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="7days" selected>Last 7 Days</option>
+          <option value="30days">Last 30 Days</option>
+          <option value="month">This Month</option>
+          <option value="custom">Custom Date</option>
+        </select>
+      </div>
+      <div class="custom-date-row" id="custom-date-row">
+        <input class="date-input" type="date" id="date-from" onchange="onCustomDateChange()"/>
+        <input class="date-input" type="date" id="date-to" onchange="onCustomDateChange()"/>
+      </div>
+    </div>
+
+    <!-- Orders toolbar -->
+    <div class="orders-toolbar">
+      <div class="toolbar-left">
+        <button class="btn-detail" onclick="openCreateOrder()">+ New Order</button>
+        <select class="sort-btn" id="sort-field" onchange="applyFilters()" style="padding:7px 10px;font-size:12px;">
+          <option value="created_at">Order date</option>
+          <option value="confirmed_at">Confirmed date</option>
+        </select>
+        <select class="sort-btn" id="sort-dir" onchange="applyFilters()" style="padding:7px 10px;font-size:12px;">
+          <option value="desc">Newest first</option>
+          <option value="asc">Oldest first</option>
+        </select>
+        <select class="page-size-select" id="page-size-select" onchange="onPageSizeChange()">
+          <option value="30">30 / page</option>
+          <option value="all">Show All</option>
+        </select>
+      </div>
+      <span class="orders-count" id="orders-count"></span>
+    </div>
+
+    <!-- Bulk bar (confirmed tab only) -->
+    <div class="bulk-bar" id="bulk-bar">
+      <button class="select-all-btn" onclick="toggleSelectAll()">Select All</button>
+      <span class="bulk-count" id="bulk-count">0 selected</span>
+      <button class="bulk-ship-btn" onclick="bulkShip()">Bulk Ship</button>
+      <button class="bulk-ship-btn" style="background:#16a34a;flex:0 0 auto;padding:10px 14px;" onclick="exportConfirmedXLSX()">⬇ Export Print List</button>
+    </div>
+
+    <!-- Orders list -->
+    <div class="orders-scroll" id="orders-list"></div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination"></div>
+
+  </div>
+
+  <!-- Detail (popup modal) -->
+  <div class="screen" id="screen-detail">
+    <div class="detail-sheet">
+      <div class="detail-header">
+        <button class="detail-back" onclick="closeDetail()"><span>‹</span> Back</button>
+        <button class="detail-x" onclick="closeDetail()">×</button>
+      </div>
+      <div class="detail-scroll" id="detail-content"></div>
+    </div>
+  </div>
+
+  <div class="tab-bar" id="tab-bar"></div>
+</div>
+
+<!-- History Modal -->
+<div class="modal-overlay" id="history-modal">
+  <div class="modal">
+    <div class="modal-title">Order History <button class="modal-close" onclick="closeModal('history-modal')">×</button></div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="edit-modal">
+    <div class="modal-title">Edit Order <button class="modal-close" onclick="closeModal('edit-modal')">×</button></div>
+    <div class="edit-field">
+      <div class="edit-label">Name</div>
+      <input class="edit-input" id="edit-name"/>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Phone</div>
+      <input class="edit-input" id="edit-phone" type="tel"/>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Delivery Type</div>
+      <select class="edit-select" id="edit-type" onchange="onEditTypeChange()">
+        <option value="home">Home Delivery</option>
+        <option value="pickup">Stop Desk</option>
+      </select>
+    </div>
+    <div class="edit-field">
+      <div class="edit-label">Wilaya</div>
+      <select class="edit-select" id="edit-wilaya" onchange="onEditWilayaChange()">
+        <option value="">Select Wilaya</option>
+      </select>
+    </div>
+    <div class="edit-field" id="edit-commune-wrap">
+      <div class="edit-label">Commune</div>
+      <select class="edit-select" id="edit-commune">
+        <option value="">Select Commune</option>
+      </select>
+    </div>
+    <div class="edit-field" id="edit-desk-wrap" style="display:none">
+      <div class="edit-label">Stop Desk</div>
+      <select class="edit-select" id="edit-desk">
+          <option value="">Loading desks...</option>
+      </select>
+    </div>
+    <div id="edit-product-section">
+      <!-- populated by openEdit(): itemized list for cart orders, text inputs for single orders -->
+    </div>
+    <div class="edit-label" style="margin-bottom:6px">Price Breakdown</div>
+    <div class="price-fields">
+      <div class="edit-field">
+        <div class="edit-label">Product Price</div>
+        <input class="edit-input" id="edit-product-price" type="number" oninput="this._manualEdit=true;calcTotal()" placeholder="0"/>
+      </div>
+      <div class="edit-field">
+        <div class="edit-label">Shipping</div>
+        <input class="edit-input" id="edit-shipping-price" type="number" oninput="calcTotal()" placeholder="0"/>
+      </div>
+    </div>
+    <div class="total-display" id="edit-total-display">Total: 0 DZD</div>
+    <button class="edit-save-btn" onclick="saveEdit()">Save Changes</button>
+  </div>
+</div>
+
+<!-- Create Order Modal -->
+<div class="modal-overlay" id="create-order-modal">
+  <div class="edit-modal">
+    <div class="modal-title">Create Order <button class="modal-close" onclick="closeModal('create-order-modal')">×</button></div>
+    <div class="edit-field"><div class="edit-label">Customer Name</div><input class="edit-input" id="create-name" autocomplete="name"/></div>
+    <div class="edit-field"><div class="edit-label">Phone</div><input class="edit-input" id="create-phone" type="tel" inputmode="tel" placeholder="05XXXXXXXX"/></div>
+    <div class="edit-field"><div class="edit-label">Product</div><select class="edit-select" id="create-product" onchange="onCreateProductChange()"><option value="">Loading products…</option></select></div>
+    <div class="edit-field"><div class="edit-label">Variant</div><select class="edit-select" id="create-variant"><option value="">Standard</option></select></div>
+    <div class="edit-field"><div class="edit-label">Delivery Type</div><select class="edit-select" id="create-type" onchange="onCreateTypeChange()"><option value="home">Home Delivery</option><option value="pickup">Stop Desk</option></select></div>
+    <div class="edit-field"><div class="edit-label">Wilaya</div><select class="edit-select" id="create-wilaya" onchange="onCreateWilayaChange()"><option value="">Select Wilaya</option></select></div>
+    <div class="edit-field" id="create-commune-wrap"><div class="edit-label">Commune</div><select class="edit-select" id="create-commune"><option value="">Select Commune</option></select></div>
+    <div class="edit-field" id="create-desk-wrap" style="display:none"><div class="edit-label">Stop Desk</div><select class="edit-select" id="create-desk"><option value="">Select Stop Desk</option></select></div>
+    <div class="edit-field"><div class="edit-label">Note</div><textarea class="note-field" id="create-notes" placeholder="Optional note…"></textarea></div>
+    <div class="total-display" id="create-total-display">Total: Select product and wilaya</div>
+    <button class="edit-save-btn" id="create-order-submit" onclick="submitCreateOrder()">Create Order</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SB_URL = 'https://smqpnioddydqhtfjjlpw.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InNtcXBuaW9kZHlkcWh0ZmpqbHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwNzY4MjAsImV4cCI6MjEwMDY1MjgyMH0.GskDtssr69UkEzkWDvb1Jnc9mYQJKwGpvaBmuhbMjIk';
+const SB_PROJECT = 'https://smqpnioddydqhtfjjlpw.supabase.co';
+const { createClient } = supabase;
+const sb = createClient(SB_PROJECT, SB_KEY);
+
+const STATUSES = [
+  {k:'draft',        l:'Draft',         c:'#8b5cf6'},
+  {k:'pending',       l:'Pending',       c:'#f59e0b'},
+  {k:'to_recall',     l:'To Recall',     c:'#fb923c'},
+  {k:'attempt_1',     l:'Attempt 1',     c:'#f97316'},
+  {k:'attempt_2',     l:'Attempt 2',     c:'#ea580c'},
+  {k:'attempt_3',     l:'Attempt 3',     c:'#dc2626'},
+  {k:'rescheduled',   l:'Rescheduled',   c:'#06b6d4'},
+  {k:'confirmed',     l:'Confirmed',     c:'#3b82f6'},
+  {k:'shipped',       l:'Shipped',       c:'#8b5cf6'},
+  {k:'delivered',     l:'Delivered',     c:'#22c55e'},
+  {k:'canceled',      l:'Canceled',      c:'#e11d48'},
+  {k:'not_delivered', l:'Not Delivered', c:'#ef4444'},
+  {k:'duplicated',    l:'Duplicated',    c:'#71717a'},
+];
+const CONFIRMATION_FLOW_STATUSES = new Set(['confirmed','shipped','shipping','rescheduled','delivered','not_delivered','returned','attempt_1','attempt_2','attempt_3','suspended']);
+
+const WILAYA_DATA = {"01 - Adrar":["Adrar","Akabli","Aougrout","Aoulef","Bordj Badji Mokhtar","Bouda","Charouine","Deldoul","Fenoughil","In Zghmir","Ksar Kaddour","Metarfa","Ouled Ahmed Tammi","Ouled Aissa","Ouled Said","Reggane","Sali","Sbaa","Talmine","Tamentit","Tamest","Timiaouine","Timimoun","Timokten","Tinerkouk","Tit","Tsabit","Zaouiet Kounta"],"02 - Chlef":["Abou El Hassen","Ain Merane","Benairia","Beni Bouateb","Beni Haoua","Beni Rached","Boukadir","Bouzghaia","Breira","Chettia","Chlef","Dahra","El Hadjadj","El Karimia","El Marsa","Harchoun","Herenfa","Labiod Medjadja","Moussadek","Oued Fodda","Oued Goussine","Oued Sly","Ouled Abbes","Ouled Ben Abdelkader","Ouled Fares","Oum Drou","Sendjas","Sidi Abderrahmane","Sidi Akacha","Sobha","Tadjna","Talassa","Taougrite","Tenes","Zeboudja"],"03 - Laghouat":["Aflou","Ain Mahdi","Ain Sidi Ali","Beidha","Benacer Ben Chohra","Brida","El Assafia","El Ghicha","El Haouaita","El Kheneg","Gueltat Sidi Saad","Hadj Mechri","Hassi Delaa","Hassi R'Mel","Ksar El Hirane","Laghouat","Oued M'Zi","Oued Morra","Sebgag","Sidi Bouzid","Sidi Makhlouf","Tadjmout","Tadjrouna","Taouiala"],"04 - Oum El Bouaghi":["Ain Babouche","Ain Beida","Ain Diss","Ain Fekroune","Ain Kercha","Ain M'lila","Ain Zitoun","Behir Chergui","Berriche","Bir Chouhada","Dhala","El Amiria","El Belala","El Djazia","El Fedjoudj Boughrara Saoudi","El Harmilia","Fkirina","Hanchir Toumghani","Ksar Sbahi","Meskiana","Oued Nini","Ouled Gacem","Ouled Hamla","Ouled Zouai","Oum El Bouaghi","Rahia","Sigus","Souk Naamane","Zorg"],"05 - Batna":["Ain Djasser","Ain Touta","Ain Yagout","Arris","Barika","Batna","Beni Foudhala El Hakania","Bitam","Boulhilat","Boumagueur","Boumia","Bouzina","Chemora","Chir","Djerma","Djezzar","El Hassi","El Madher","Fesdis","Foum Toub","Ghassira","Gosbat","Guigba","Hidoussa","Ichmoul","Inoughissen","Kimmel","Ksar Belezma","Larbaa","Lazrou","Lemsane","M'doukel","Maafa","Menaa","Merouana","Metkaouak","N Gaous","Oued Chaaba","Oued El Ma","Oued Taga","Ouled Ammar","Ouled Aouf","Ouled Fadel","Ouled Selam","Ouled Si Slimane","Ouyoun El Assafir","Rahbat","Ras El Aioun","Sefiane","Seggana","Seriana","Talkhamt","Taxlent","Tazoult","Teniet El Abed","Tighanimine","Tigherghar","Tilatou","Timgad","Tkout","Zanat El Beida"],"06 - Bejaia":["Adekar","Ait Djellil","Ait R'zine","Ait Smail","Akbou","Akfadou","Amalou","Amizour","Aokas","Barbacha","Bejaia","Beni Ksila","Beni Melikeche","Benimaouch","Boudjellil","Bouhamza","Boukhelifa","Chelata","Chemini","Darguina","Draa Kaid","El Kseur","Feraoun","Ifelain Ilmathen","Ighil Ali","Ighram","Kendira","Kherrata","Leflaye","M'cisna","Melbou","Oued Ghir","Ouzallaguen","Seddouk","Semaoun","Sidi Aich","Sidi Ayad","Souk El Thenine","Souk Oufella","Tala Hamza","Tamokra","Tamridjet","Taourirt Ighil","Taskriout","Tazmalt","Thinabdher","Tibane","Tichi","Tifra","Timzrit","Tizi N'berber","Toudja"],"07 - Biskra":["Ain Naga","Ain Zaatout","Besbes","Biskra","Bordj Ben Azzouz","Bouchagroun","Branis","Chetma","Djemorah","Doucen","Ech Chaiba","El Feidh","El Ghrous","El Hadjab","El Haouch","El Kantara","El Outaya","Foughala","Khanguet Sidinadji","Lichana","Lioua","M'lili","M'ziraa","Mchouneche","Mekhadma","Ouled Djellal","Oumache","Ourlal","Ras El Miaad","Sidi Khaled","Sidi Okba","Tolga","Zeribet El Oued"],"08 - Bechar":["Abadla","Bechar","Beni Abbes","Beni Ikhlef","Beni Ounif","Boukais","El Ouata","Erg Ferradj","Igli","Kenedsa","Kerzaz","Ksabi","Lahmar","Mechraa Houari Boumedienne","Meridja","Mogheul","Ouled Khoudir","Tabalbala","Taghit","Tamtert","Timoudi"],"09 - Blida":["Ain Romana","Beni Mered","Beni Tamou","BenKhlil","Blida","Bouarfa","Boufarik","Bougara","Bouinan","Chebli","Chiffa","Chrea","Djebabra","El Affroun","Guerrouaou","Hammam Melouane","Larbaa","Meftah","Mouzaia","Oued Djer","Oued El Alleug","Ouled Selama","Ouled Yaich","Souhane","Soumaa"],"10 - Bouira":["Aghbalou","Ahl El Ksar","Ain Bessem","Ain El Hadjar","Ain Laloui","Ain Turk","Ait Laaziz","Aomar","Ath Mansour","Bechloul","Bir Ghbalou","Bordj Oukhriss","Bouderbala","Bouira","Boukram","Chorfa","Dechmia","Dirah","Djebahia","El Adjiba","El Asnam","El Hachimia","El Hakimia","El Khebouzia","El Mokrani","Guerrouma","Hadjera Zerga","Haizer","Hanif","Kadiria","Lakhdaria","Maala","Maamora","Mchedallah","Mezdour","Oued El Berdi","Ouled Rached","Raouraoua","Ridane","Saharidj","Souk El Khemis","Sour El Ghozlane","Taghzout","Taguedit","Zbarbar"],"11 - Tamanrasset":["Abalessa","Foggaret Ezzaouia","Idles","In Amguel","In Ghar","In Guezzam","In Salah","Tamanrasset","Tazouk","Tinzaouatine"],"12 - Tebessa":["Ain Zerga","Bedjene","Bekkaria","Bir Dheb","Bir El Ater","Bir El Mokadem","Boukhadra","Boulhaf Dyr","Cheria","El Aouinet","El Kouif","El Ma El Biodh","El Mazeraa","El Meridj","El Ogla","Ferkane","Gorriguer","Hammamet","Lahouidjbet","Morsot","Negrine","Ouenza","Oum Ali","Sef saf El Ouesra","Stah Guentis","Tebessa","Tlidjene"],"13 - Tlemcen":["Ain Fetah","Ain Fezza","Ain Ghoraba","Ain Kebira","Ain Nehala","Ain Tallout","Ain Youcef","Amieur","Azails","Bab El Assa","Beni Bahdel","Beni Boussaid","Beni Mester","Beni Ouarsous","Beni Semiel","Beni Snous","Bensekrane","Bouhlou","Chetouane","Dar Yaghmouracene","Djebala","El Aricha","El Bouihi","El Fehoul","El Gor","Fellaoucene","Ghazaouet","Hammam Boughrara","Hennaya","Honaine","Maghnia","Mansourah","Marsa Ben Mhidi","Msirda Fouaga","Nedroma","Oued Chouly","Ouled Mimoun","Ouled Riyah","Remchi","Sabra","Sebbaa Chioukh","Sebdou","Sidi Abdelli","Sidi Djillali","Sidi Medjahed","Souahlia","Souani","Souk El Khemis","Souk Thlata","Terni Beni Hediel","Tianet","Tlemcen","Zenata"],"14 - Tiaret":["Ain Bouchekif","Ain Deheb","Ain El Hadid","Ain Kermes","Ain Zarit","Bougara","Chehaima","Dahmouni","Djillali Ben Amar","Faidja","Frenda","Guertoufa","Hamadia","Ksar Chellala","Madna","Mahdia","Mechraa Safa","Medrissa","Medroussa","Meghila","Mellakou","Nadorah","Naima","Oued Lilli","Ouled Djerad","Rahouia","Rechaiga","Sebaine","Sebt","Serghine","Sidi Abdelghani","Sidi Abderrahmane","Sidi Ali Mellal","Sidi Bakhti","Sidi Hosni","Sougueur","Tagdemt","Takhemaret","Tiaret","Tidda","Tousnina","Zmalet El Emir Abdelkade"],"15 - Tizi Ouzou":["Abi Youcef","Aghrib","Agouni Gueghrane","Ain El Hammam","Ain Zaouia","Ait Aggouacha","Ait Aissa Mimoun","Ait Bouadou","Ait Boumehdi","Ait Chaffaa","Ait Khelil","Ait Mahmoud","Ait Oumalou","Ait Toudert","Ait Yahia","Ait Yahia Moussa","Akbil","Akerrou","Assi Youcef","Azazga","Azzefoun","Beni Aissi","Beni Douala","Beni Yenni","Beni Ziki","Beni Zmenzer","Boghni","Boudjima","Bounouh","Bouzguene","Draa Ben Khedda","Draa El Mizan","Freha","Frikat","Iboudraren","Idjeur","Iferhounene","Ifigha","Iflissen","Illilten","Iloula Oumalou","Imsouhal","Irdjen","Larba Nath Irathen","Maatkas","Makouda","Mechtrass","Mekla","Mizrana","Mkira","Ouacif","Ouadhia","Ouaguenoun","Sidi Naamane","Souamaa","Souk El Thenine","Tadmait","Tigzirt","Timizart","Tirmitine","Tizi Ghenif","Tizi Nthlata","Tizi Ouzou","Tizi Rached","Yakourene","Yatafen","Zekri"],"16 - Algiers":["Ain Benian","Ain Taya","Alger Centre","Bab El Oued","Bab Ezzouar","Baba Hesen","Bachedjerah","Bains Romains","Baraki","Ben Aknoun","Beni Messous","Bir Mourad Rais","Bir Touta","Birkhadem","Bologhine Ibnou Ziri","Bordj El Bahri","Bordj El Kiffan","Bourouba","Bouzareah","Casbah","Cheraga","Dar El Beida","Dely Ibrahim","Djasr Kasentina","Douira","Draria","El Achour","El Biar","El Harrach","El Madania","El Magharia","El Mouradia","Herraoua","Hussein Dey","Hydra","Kheraisia","Kouba","Les Eucalyptus","Maalma","Marsa","Mohamed Belouzdad","Mohammadia","Oued Koriche","Oued Smar","Ouled Chebel","Ouled Fayet","Rahmania","Rais Hamidou","Reghaia","Rouiba","Sehaoula","Setaouali","Sidi M'hamed","Sidi Moussa","Souidania","Tessala el Merdja","Zeralda"],"17 - Djelfa":["Ain Chouhada","Ain El Ibel","Ain Fekka","Ain Maabed","Ain Oussera","Amourah","Benhar","Beni Yacoub","Birine","Bouira Lahdeb","Charef","Dar Chouikh","Deldoul","Djelfa","Douis","El Guedid","El Idrissia","El Khemis","Feidh El Botma","Guernini","Guettara","Had Sahary","Hassi Bahbah","Hassi El Euch","Hassi Fedoul","M'Liliha","Messaad","Moudjebara","Oum Laadham","Sed Rahal","Selmana","Sidi Baizid","Sidi Ladjel","Tadmit","Zaafrane","Zaccar"],"18 - Jijel":["Bordj T'her","Boudria Beni Yadjis","Bouraoui Belhadef","Boussif Ouled Askeur","Chahna","Chekfa","Djemaa Beni Habibi","Djmila","El Ancer","El Aouana","El Kennar Nouchfi","El Milia","Emir Abdelkader","Erraguene","Ghebala","Jijel","Kaous","Kemir Oued Adjoul","Ouadjana","Ouled Rabah","Ouled Yahia Khadrouch","Selma Benziada","Settara","Sidi Abdelaziz","Sidi Maarouf","Taher","Texena","Ziamma Mansouriah"],"19 - Setif":["Ain Abessa","Ain Arnat","Ain Azal","Ain El Kebira","Ain Lahdjar","Ain Legraj","Ain Oulmane","Ain Roua","Ain Sebt","Ait Naoual Mezada","Ait Tizi","Amoucha","Babor","Bazer Sakhra","Beidha Bordj","Belaa","Beni Aziz","Beni Chebana","Beni Fouda","Beni Mouhli","Beni Ouartilane","Beni Oussine","Bir El Arch","Bir Haddada","Bouandas","Bougaa","Bousselam","Boutaleb","Dehamcha","Djemila","Draa Kebila","El Eulma","El Ouldja","El Ouricia","Guellal","Guelta Zerka","Guenzet","Guidjel","Hamma","Hammam Essokhna","Hammam Guergour","Harbil","Ksar El Abtal","Maaouia","Maouklane","Mezloug","Oued El Barad","Ouled Addouane","Ouled Sabor","Ouled Sidi Ahmed","Ouled Tebben","Rosfa","Salah Bey","Serdj El Ghoul","Setif","Tachouda","Talaifacene","Taya","Tella","Tizi Nbechar"],"20 - Saida":["Ain El Hadjar","Ain Sekhouna","Ain Soltane","Doui Thabet","El Hassasna","Hounet","Maamora","Moulay Larbi","Ouled Brahim","Ouled Khaled","Saida","Sidi Ahmed","Sidi Amar","Sidi Boubekeur","Tircine","Youb"],"21 - Skikda":["Ain Bouziane","Ain Cherchar","Ain Kechra","Ain Zouit","Azzaba","Bein El Ouiden","Bekkouche Lakhdar","Ben Azzouz","Beni Bachir","Beni Oulbane","Beni Zid","Bouchtata","Cheraia","Collo","Djendel","El Ghedir","El Hadeaik","El Harrouch","El Marsa","Emdjez Edchich","Es Sebt","Filfila","Hamadi Krouma","Kanoua","Kerkera","Kheneg Mayoum","Oued Zehour","Ouldja Boulbalout","Ouled Attia","Ouled Hebaba","Oum Toub","Ramdane Djamel","Salah Bouchaour","Sidi Mezghiche","Skikda","Tamalous","Zerdazas","Zitouna"],"22 - Sidi Bel Abbes":["Ain Adden","Ain El Berd","Ain Kada","Ain Thrid","Ain Tindamine","Amarnas","Badredine El Mokrani","Belarbi","Ben Badis","Benachiba Chelia","Bir El Hammam","Boudjebaa El Bordj","Boukhanafis","Chetouane Belaila","Dhaya","El Hacaiba","Hassi Dahou","Hassi Zehana","Lamtar","Makedra","Marhoum","Mcid","Merine","Mezaourou","Mostefa Ben Brahim","Moulay Slissen","Oued Sbaa","Oued Sefioun","Oued Taourira","Ras El Ma","Redjem Demouche","Sehala Thaoura","Sfissef","Sidi Ali Benyoub","Sidi Ali Boussidi","Sidi Bel Abbes","Sidi Brahim","Sidi Chaib","Sidi Dahou","Sidi Hamadouche","Sidi Khaled","Sidi Lahcene","Sidi Yacoub","Tabia","Tafissour","Taoudmout","Teghalimet","Telagh","Tenira","Tessala","Tilmouni","Zerouala"],"23 - Annaba":["Ain Berda","Annaba","Berrahel","Chetaibi","Cheurfa","El Bouni","El Hadjar","Eulma","Oued El Aneb","Seraidi","Sidi Amer","Treat"],"24 - Guelma":["Ain Ben Beida","Ain Larbi","Ain Makhlouf","Ain Reggada","Ain Sandel","Belkhir","Ben Djarah","Beni Mezline","Bordj Sabat","Bou Hachana","Bou Hamdane","Bouati Mahmoud","Bouchegouf","Bouhamra Ahmed","Dahouara","Djeballah Khemissi","El Fedjoudj","Guelaat Bou Sbaa","Guelma","Hammam Maskhoutine","Hamman Nbail","Heliopolis","Houari Boumediene","Khezara","Medjez Amar","Medjez Sfa","Nechmaya","Oued Cheham","Oued Fragha","Oued Zenati","Ras El Agba","Roknia","Salaoua Announa","Tamlouka"],"25 - Constantine":["Ain Abid","Ain Smara","Beni Hamiden","Constantine","Didouche Mourad","El Khroub","Hamma Bouziane","Ibn Badis","Ibn Ziad","Mesaoud Boujeriou","Ouled Rahmoune","Zighoud Youcef"],"26 - Medea":["Ain Boucif","Ain Ouksir","Aissaouia","Aziz","Baata","Benchicao","Beni Slimane","Berrouaghia","Bir Ben Laabed","Boghar","Bouaiche","Bouaichoune","Bouchrahil","Boughezoul","Bouskene","Chahbounia","Chelalet El Adhaoura","Cheniguel","Derrag","Deux Bassins","Djouab","Draa Essamar","El Azizia","El Guelbelkebir","El Hamdania","El Omaria","El Ouinet","Hannacha","Kef Lakhdar","Khams Djouamaa","Ksar El Boukhari","Medea","Medjebar","Meftaha","Meghraoua","Mezerena","Mihoub","Ouamri","Oued Harbil","Ouled Antar","Ouled Bouachra","Ouled Brahim","Ouled Deide","Ouled Hellal","Ouled Maaref","Oum El Djalil","Ouzera","Rebaia","Saneg","Sedraia","Seghouane","Si Mahdjoub","Sidi Damed","Sidi Errabia","Sidi Naamane","Sidi Zahar","Sidi Ziane","Souagui","Tablat","Tafraout","Tamesguida","Tizi Mahdi","Tlatet Eddouair","Zoubiria"],"27 - Mostaganem":["Abdelmalek Ramdane","Achaacha","Ain Boudinar","Ain Nouissy","Ain Sidi Cherif","Ain Tadles","Bouguirat","El Hassiane","Fornaka","Hadjadj","Hassi Mameche","Khadra","Kheiredine","Mansourah","Mesra","Mezghrane","Mostaganem","Nekmaria","Oued El Kheir","Ouled Boughalem","Ouled Maallah","Safsaf","Sayada","Sidi Ali","Sidi Bellater","Sidi Lakhdar","Sirat","Souaflia","Sour","Stidia","Tazgait","Touahria"],"28 - M'Sila":["Ain El Hadjel","Ain El Melh","Ain Errich","Ain Fares","Ain Khadra","Belaiba","Ben Srour","Beni Ilmane","Benzouh","Berhoum","Bir Foda","Bou Saada","Bouti Sayah","Chellal","Dehahna","Djebel Messaad","El Hamel","El Houamed","Hammam Dhalaa","Khettouti Sed Djir","Khoubana","M'cif","M'sila","Maadid","Maarif","Magra","Medjedel","Mtarfa","Ouanougha","Oued Chair","Ouled Addi Guebala","Ouled Atia","Ouled Derradj","Ouled Madhi","Ouled Mansour","Ouled Sidi Brahim","Ouled Slimane","Oultene","Sidi Aissa","Sidi Ameur","Sidi Hadjeres","Sidi M'Hamed","Slim","Souamaa","Tamsa","Tarmount","Zarzour"],"29 - Mascara":["Ain Fares","Ain Fekan","Ain Ferah","Ain Frass","Alaimia","Aouf","Benian","Bou Hanifia","Bou Henni","Chorfa","El Bordj","El Gaada","El Ghomri","El Hachem","El Keurt","El Mamounia","El Menaouer","Ferraguig","Froha","Gharrous","Gherdjoum","Ghriss","Guettena","Hacine","Khalouia","Makdha","Maoussa","Mascara","Matemore","Moctadouz","Mohammadia","Nesmot","Oggaz","Oued El Abtal","Oued Taria","Ras Ain Amirouche","Sedjerara","Sehailia","Sidi Abdeldjebar","Sidi Abdelmoumene","Sidi Boussaid","Sidi Kada","Sig","Teghennif","Tizi","Zahana","Zelmata"],"30 - Ouargla":["Ain Beida","Balidat Ameur","Benaceur","El Allia","El Borma","El Hadjira","Hassi Ben Abdellah","Hassi Messaoud","Megarine","Mnaguer","Nezla","Ngoussa","Ouargla","Rouissat","Sidi Khouiled","Sidi Slimane","Taibet","Tamacine","Tebesbest","Touggourt","Zaouia El Abidia"],"31 - Oran":["Ain Biya","Ain Kerma","Ain Turk","Arzew","Ben Freha","Bethioua","Bir El Djir","Boufatis","Bousfer","Boutlelis","El Ancar","El Braya","El Karma","Es Senia","Gdyel","Hassi Ben Okba","Hassi Bounif","Hassi Mefsoukh","Marsat El Hadjadj","Mers El Kebir","Messerghin","Oran","Oued Tlelat","Sidi Ben Yebka","Sidi Chami","Tafraoui"],"32 - El Bayadh":["Ain El Orak","Arbaouat","Boualem","Bougtoub","Boussemghoun","Brezina","Cheguig","Chellala","El Abiodh Sidi Cheikh","El Bayadh","El Bnoud","El Kheither","El Mehara","Ghassoul","Kef El Ahmar","Krakda","Rogassa","Sidi Ameur","Sidi Slimane","Sidi Tifour","Stitten","Tousmouline"],"33 - Illizi":["Bordj El Haouasse","Bordj Omar Driss","Debdeb","Djanet","Illizi","In Amenas"],"34 - Bordj Bou Arreridj":["Ain Taghrout","Ain Tesra","Belimour","Ben Daoud","Bir Kasdali","Bordj Bou Arreridj","Bordj Ghdir","Bordj Zemoura","Colla","Djaafra","El Ach","El Achir","El Anseur","El Hamadia","El Main","El Mhir","Ghilassa","Haraza","Hasnaoua","Khelil","Ksour","Mansoura","Medjana","Ouled Brahem","Ouled Dahmane","Ouled Sidi Brahim","Rabta","Ras El Oued","Sidi Embarek","Tafreg","Taglait","Teniet En Nasr","Tesmart","Tixter"],"35 - Boumerdes":["Afir","Ammal","Baghlia","Ben Choud","Beni Amrane","Bordj Menaiel","Boudouaou","Boudouaou El Bahri","Boumerdes","Bouzegza Keddara","Chabet El Ameur","Corso","Dellys","Djinet","El Kharrouba","Hammedi","Isser","Khemis El Khechna","Laghata","Larbatache","Naciria","Ouled Aissa","Ouled Hedadj","Ouled Moussa","Si Mustapha","Sidi Daoud","Souk El Had","Taourga","Thenia","Tidjelabine","Timezrit","Zemmouri"],"36 - El Tarf":["Ain El Assel","Ain Kerma","Asfour","Ben M Hidi","Berrihane","Besbes","Bougous","Bouhadjar","Bouteldja","Chebaita Mokhtar","Chefia","Chihani","Drean","Echatt","El Aioun","El Kala","El Tarf","Hammam Beni Salah","Lac Des Oiseaux","Oued Zitoun","Raml Souk","Souarekh","Zerizer","Zitouna"],"37 - Tindouf":["Oum El Assel","Tindouf"],"38 - Tissemsilt":["Ammari","Beni Chaib","Beni Lahcene","Bordj Bou Naama","Bordj El Emir Abdelkader","Boucaid","Khemisti","Larbaa","Lardjem","Layoune","Lazharia","Maasem","Melaab","Ouled Bessem","Sidi Abed","Sidi Boutouchent","Sidi Lantri","Sidi Slimane","Tamalaht","Theniet El Had","Tissemsilt","Youssoufia"],"39 - El Oued":["Bayadha","Beni Guecha","Debila","Djamaa","Douar El Ma","El Mghair","El Ogla","El Oued","Guemar","Hamraia","Hassani Abdelkrim","Hassi Khelifa","Kouinine","Magrane","Mih Ouansa","Mrara","Nakhla","Oued El Alenda","Oum Touyour","Ourmas","Reguiba","Robbah","Sidi Amrane","Sidi Aoun","Sidi Khellil","Still","Taghzout","Taleb Larbi","Tendla","Trifaoui"],"40 - Khenchela":["Ain Touila","Babar","Baghai","Bouhmama","Chelia","Cherchar","Djellal","El Hamma","El Mahmal","El Oueldja","Ensigha","Kais","Khenchela","Khirane","Msara","Mtoussa","Ouled Rechache","Remila","Tamza","Taouzianat","Yabous"],"41 - Souk Ahras":["Ain Soltane","Ain Zana","Bir Bouhouche","Drea","Haddada","Hanancha","Khedara","Khemissa","M'daourouche","Mechroha","Merahna","Oued Keberit","Ouled Driss","Ouled Moumen","Oum El Adhaim","Quillen","Ragouba","Safel El Ouiden","Sedrata","Sidi Fredj","Souk Ahras","Taoura","Terraguelt","Tiffech","Zaarouria","Zouabi"],"42 - Tipaza":["Aghabal","Ahmer El Ain","Ain Tagourait","Attatba","Beni Milleuk","Bou Haroun","Bou Ismail","Bourkika","Chaiba","Cherchell","Damous","Douaouda","Fouka","Gouraya","Hadjerat Ennous","Hadjout","Khemisti","Kolea","Larhat","Menaceur","Messelmoun","Meurad","Nodor","Sidi Amar","Sidi Ghiles","Sidi Rached","Sidi Semiane","Tipaza"],"43 - Mila":["Ahmed Rachedi","Ain Beida Harriche","Ain Mellouk","Ain Tine","Amira Arras","Benyahia Abderrahmane","Bouhatem","Chelghoum Laid","Chigara","Derradji Bousselah","El Mechira","Elayadi Barbes","Ferdjioua","Grarem Gouga","Hamala","Mila","Minar Zarza","Oued Athmenia","Oued Endja","Oued Seguen","Ouled Khalouf","Rouached","Sidi Khelifa","Sidi Merouane","Tadjenanet","Tassadane Haddada","Telerghma","Terrai Bainen","Tessala Lamatai","Tiberguent","Yahia Beniguecha","Zeghaia"],"44 - Ain Defla":["Ain Benian","Ain Bouyahia","Ain Defla","Ain Lechiakh","Ain Soltane","Ain Torki","Arib","Barbouche","Bathia","Belaas","Ben Allal","Bir Ouled Khelifa","Bordj Emir Khaled","Boumedfaa","Bourached","Djelida","Djemaa Ouled Chikh","Djendel","El Abadia","El Amra","El Attaf","El Hassania","El Maine","Hammam Righa","Hoceinia","Khemis Miliana","Mekhatria","Miliana","Oued Chorfa","Oued Djemaa","Rouina","Sidi Lakhdar","Tachta Zegagha","Tarik Ibn Ziad","Tiberkanine","Zeddine"],"45 - Naama":["Ain Ben Khelil","Ain Sefra","Assela","Djeniane Bourzeg","El Biod","Kasdir","Makman Ben Amer","Mechria","Moghrar","Naama","Sfissifa","Tiout"],"46 - Ain Temouchent":["Aghlal","Ain El Arbaa","Ain Kihal","Ain Temouchent","Ain Tolba","Aoubellil","Beni Saf","Bou Zedjar","Chaabet El Ham","Chentouf","El Amria","El Emir Abdelkader","El Malah","El Messaid","Hammam Bouhadjar","Hassasna","Hassi El Ghella","Oued Berkeche","Oued Sabah","Ouled Boudjemaa","Ouled Kihal","Oulhaca El Gheraba","Sidi Ben Adda","Sidi Boumediene","Sidi Ouriache","Sidi Safi","Tamzoura","Terga"],"47 - Ghardaia":["Berriane","Bounoura","Dhayet Bendhahoua","El Atteuf","El Guerrara","El Meniaa","Ghardaia","Hassi Fehal","Hassi Gara","Mansoura","Metlili","Sebseb","Zelfana"],"48 - Relizane":["Ain Rahma","Ain Tarek","Ammi Moussa","Belaassel Bouzagza","Bendaoud","Beni Dergoun","Beni Zentis","Dar Ben Abdellah","Djidiouia","El Guettar","El Hamadna","El Hassi","El Matmar","El Ouldja","Had Echkalla","Hamri","Kalaa","Lahlef","Mazouna","Mediouna","Mendes","Merdja Sidi Abed","Ouarizane","Oued El Djemaa","Oued Essalem","Oued Rhiou","Ouled Aiche","Ouled Sidi Mihoub","Ramka","Relizane","Sidi Khettab","Sidi Lazreg","Sidi M'hamed Benali","Sidi M'hamed Benaouda","Sidi Saada","Souk El Had","Yellel","Zemmoura"],"49 - Timimoun":["Aougrout","Charouine","Deldoul","Ksar Kaddour","Metarfa","Ouled Aissa","Ouled Said","Talmine","Timimoun","Tinerkouk"],"50 - Bordj Baji Mokhtar":["Bordj Badji Mokhtar","Timiaouine"],"51 - Ouled Djellal":["Besbes","Chaiba","Doucen","Ouled Djellal","Ras El Miad","Sidi Khaled"],"52 - Beni Abbes":["Beni-Abbes","Beni-Ikhlef","El Ouata","Igli","Kerzaz","Ksabi","Ouled-Khodeir","Tamtert","Timoudi"],"53 - In Salah":["Ain Salah","Foggaret Ezzoua","Inghar"],"54 - In Guezzam":["Ain Guezzam","Tin Zouatine"],"55 - Touggourt":["Benaceur","Blidet Amor","El Alia","El-Hadjira","M'naguer","Megarine","Nezla","Sidi Slimane","Taibet","Tebesbest","Temacine","Touggourt","Zaouia El Abidia"],"56 - Djanet":["Bordj El Haouass","Djanet"],"57 - El M'Ghair":["Djamaa","El-M'ghaier","M'rara","Oum Touyour","Sidi Amrane","Sidi Khelil","Still","Tenedla"],"58 - El Menia":["El Meniaa","Hassi Fehal","Hassi Gara"]};
+const WILAYA_NAMES = Object.keys(WILAYA_DATA);
+
+const SB_H = {
+  'apikey': SB_KEY,
+  'Authorization': `Bearer ${SB_KEY}`,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=minimal'
+};
+
+const OPERATOR_TAB_KEY='arco_operator_tab';
+const OPERATOR_FILTER_KEY='arco_operator_filter_period';
+const OPERATOR_DATE_FROM_KEY='arco_operator_date_from';
+const OPERATOR_DATE_TO_KEY='arco_operator_date_to';
+let allOrders=[], filteredOrders=[], currentTab=localStorage.getItem(OPERATOR_TAB_KEY)||'all', currentOrder=null;
+let orderReloadTimer=null;
+let selectedIds=new Set(), currentUser=null, currentRole=null;
+let noestDesks=null;
+
+function normalizeDeskCode(code){
+  const raw=String(code||'').trim().toUpperCase();
+  if(!raw)return '';
+  const m=raw.match(/^0*(\d+)([A-Z]+)$/);
+  if(!m)return raw;
+  return `${Number(m[1])}${m[2]}`;
+}
+let currentPage=1, pageSize=30;
+
+// ── PIN ──
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const errEl=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  if(!email||!password){errEl.textContent='Please enter email and password';return;}
+  btn.classList.add('loading');btn.textContent='Signing in...';errEl.textContent='';
+  const{data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){errEl.textContent='Invalid email or password';btn.classList.remove('loading');btn.textContent='Sign In';return;}
+  currentUser=data.user;
+  const allowed=await ensureOperatorAccess();
+  if(!allowed){btn.classList.remove('loading');btn.textContent='Sign In';return;}
+  await showApp();
+}
+async function ensureOperatorAccess(){
+  const errEl=document.getElementById('login-error');
+  const{data:roleData,error}=await sb.from('user_roles').select('*').eq('user_id',currentUser.id).in('role',['operator','admin']).single();
+  if(error||!roleData){
+    await sb.auth.signOut();
+    currentUser=null;currentRole=null;
+    document.getElementById('app').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+    errEl.textContent='This account is not an operator account.';
+    return false;
+  }
+  currentRole=roleData;
+  return true;
+}
+async function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  await init();
+}
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser=null;currentRole=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+window.addEventListener('DOMContentLoaded',async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){currentUser=session.user;if(await ensureOperatorAccess())await showApp();}
+  document.getElementById('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+});
+
+// ── INIT ──
+function restoreOrderFilters(){
+  const period=localStorage.getItem(OPERATOR_FILTER_KEY)||'7days';
+  const periodSelect=document.getElementById('filter-period');
+  if(periodSelect&&[...periodSelect.options].some(o=>o.value===period))periodSelect.value=period;
+  const from=document.getElementById('date-from');
+  const to=document.getElementById('date-to');
+  if(from)from.value=localStorage.getItem(OPERATOR_DATE_FROM_KEY)||'';
+  if(to)to.value=localStorage.getItem(OPERATOR_DATE_TO_KEY)||'';
+  document.getElementById('custom-date-row').classList.toggle('show',period==='custom');
+}
+async function init(){ buildTabs(); syncTabChrome(); restoreOrderFilters(); await loadOrders(); }
+async function refreshAll(){ await loadOrders(); toast('Refreshed'); }
+async function runNoestTracker(){
+  const button=document.getElementById('track-orders-btn');
+  if(button)button.disabled=true;
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    const response=await fetch('/api/track-orders',{headers:{Authorization:`Bearer ${session?.access_token||''}`}});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(result.error||'Tracking failed');
+    await loadOrders();
+    toast(`Noest checked ${result.orders_checked||0} orders · ${result.orders_updated||0} updated`);
+  }catch(error){toast(error.message||'Tracking failed',true)}finally{if(button)button.disabled=false}
+}
+
+// ── SUPABASE ──
+async function sbFetch(path,opts={}){
+  const { data: { session } } = await sb.auth.getSession();
+  const token = session?.access_token;
+  const headers = {
+    ...SB_H,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(opts.headers || {})
+  };
+  return fetch(`${SB_URL}/${path}`, { ...opts, headers });
+}
+async function loadOrders(){
+  // Keep the first load small by applying the selected date window in Supabase.
+  // Older history is only requested when the operator explicitly selects it.
+  const pageSize = 1000;
+  let all = [];
+  let from = 0;
+  const params=new URLSearchParams({select:'id,order_id,name,phone,wilaya,commune,type_livraison,station_code,product,variable,items,prix_total,shipping_cost,status,from_draft,notes,call_count,created_at,confirmed_at,tracking_number,shipping_agency,attribution_source',order:'created_at.desc',limit:String(pageSize)});
+  const range=getOrderDateRange();
+  if(range?.from)params.append('created_at',`gte.${range.from}`);
+  if(range?.to)params.append('created_at',`lt.${range.to}`);
+  while(true){
+    const r = await sbFetch(`orders?${params.toString()}`, {
+      headers: { Range: `${from}-${from + pageSize - 1}` }
+    });
+    const chunk = await r.json();
+    if(!Array.isArray(chunk) || chunk.length === 0) break;
+    all = all.concat(chunk);
+    if(chunk.length < pageSize) break;
+    from += pageSize;
+  }
+  allOrders = all;
+  buildProductFilter();
+  applyFilters();
+  updateKPIs();
+  drawDonut();
+}
+
+// ── PERIOD ──
+function algeriaMidnightUtc(date){
+  const [year,month,day]=date.split('-').map(Number);
+  return new Date(Date.UTC(year,month-1,day)-60*60*1000);
+}
+function getOrderDateRange(){
+  const period=document.getElementById('filter-period')?.value||'7days';
+  const now=new Date();
+  const algeriaNow=new Date(now.getTime()+60*60*1000);
+  const year=algeriaNow.getUTCFullYear();
+  const month=algeriaNow.getUTCMonth();
+  const day=algeriaNow.getUTCDate();
+  let from=null,to=null;
+  if(period==='today'){
+    from=new Date(Date.UTC(year,month,day)-60*60*1000);
+    to=new Date(from.getTime()+86400000);
+  }else if(period==='yesterday'){
+    to=new Date(Date.UTC(year,month,day)-60*60*1000);
+    from=new Date(to.getTime()-86400000);
+  }else if(period==='7days'){
+    from=new Date(now.getTime()-7*86400000);
+  }else if(period==='30days'){
+    from=new Date(now.getTime()-30*86400000);
+  }else if(period==='month'){
+    from=new Date(Date.UTC(year,month,1)-60*60*1000);
+    to=new Date(Date.UTC(year,month+1,1)-60*60*1000);
+  }else if(period==='custom'){
+    const start=document.getElementById('date-from')?.value;
+    const end=document.getElementById('date-to')?.value;
+    if(start)from=algeriaMidnightUtc(start);
+    if(end)to=new Date(algeriaMidnightUtc(end).getTime()+86400000);
+  }
+  return {from:from?.toISOString(),to:to?.toISOString()};
+}
+function onPeriodChange(){
+  const v=document.getElementById('filter-period').value;
+  localStorage.setItem(OPERATOR_FILTER_KEY,v);
+  document.getElementById('custom-date-row').classList.toggle('show',v==='custom');
+  if(v==='custom'&&!document.getElementById('date-from').value&&!document.getElementById('date-to').value){
+    allOrders=[];filteredOrders=[];applyFilters();return;
+  }
+  loadOrders();
+}
+function onCustomDateChange(){
+  localStorage.setItem(OPERATOR_DATE_FROM_KEY,document.getElementById('date-from').value||'');
+  localStorage.setItem(OPERATOR_DATE_TO_KEY,document.getElementById('date-to').value||'');
+  clearTimeout(orderReloadTimer);
+  orderReloadTimer=setTimeout(()=>loadOrders(),150);
+}
+
+// FIX: timezone-safe date comparison using Algeria UTC+1
+function toAlgeriaDate(utcString){
+  // created_at is stored as 'timestamp without time zone' in Postgres, so PostgREST returns it
+  // WITHOUT a trailing 'Z' (e.g. "2026-06-30T23:03:23.224"). new Date() on a string with no
+  // timezone marker parses it as LOCAL browser time, not UTC — which silently adds the browser's
+  // own OS timezone offset on top of the real UTC value. Force UTC interpretation by appending 'Z'.
+  const iso = /[Zz]|[+-]\d{2}:?\d{2}$/.test(utcString) ? utcString : utcString + 'Z';
+  const d = new Date(iso);
+  // Algeria is UTC+1
+  d.setTime(d.getTime() + 60*60*1000);
+  return d;
+}
+
+function inPeriod(o){
+  const p=document.getElementById('filter-period').value;
+  if(p==='all')return true;
+  if(!o.created_at)return true;
+
+  const d = toAlgeriaDate(o.created_at);
+  const now = new Date();
+  // now in Algeria time
+  const nowDZ = new Date(now.getTime() + 60*60*1000);
+
+  if(p==='today'){
+    return d.getUTCFullYear()===nowDZ.getUTCFullYear()
+      && d.getUTCMonth()===nowDZ.getUTCMonth()
+      && d.getUTCDate()===nowDZ.getUTCDate();
+  }
+  if(p==='yesterday'){
+    const y=new Date(nowDZ);y.setUTCDate(nowDZ.getUTCDate()-1);
+    return d.getUTCFullYear()===y.getUTCFullYear()
+      && d.getUTCMonth()===y.getUTCMonth()
+      && d.getUTCDate()===y.getUTCDate();
+  }
+  if(p==='7days'){
+    const w=new Date(nowDZ);w.setUTCDate(nowDZ.getUTCDate()-7);return d>=w;
+  }
+  if(p==='30days'){
+    const m=new Date(nowDZ);m.setUTCDate(nowDZ.getUTCDate()-30);return d>=m;
+  }
+  if(p==='month'){
+    return d.getUTCMonth()===nowDZ.getUTCMonth()
+      && d.getUTCFullYear()===nowDZ.getUTCFullYear();
+  }
+  if(p==='custom'){
+    const from=document.getElementById('date-from').value;
+    const to=document.getElementById('date-to').value;
+    if(from&&d<new Date(from))return false;
+    if(to&&d>new Date(to+'T23:59:59'))return false;
+    return true;
+  }
+  return true;
+}
+
+// ── FILTERS ──
+function buildProductFilter(){
+  const prods=[...new Set(allOrders.map(o=>o.product).filter(Boolean))];
+  const sel=document.getElementById('filter-product');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">All Products</option>'+
+    prods.map(p=>`<option value="${esc(p)}"${cur===p?' selected':''}>${esc(p)}</option>`).join('');
+}
+
+function onFilterChange(){
+  currentPage=1;
+  applyFilters();
+}
+
+function applyFilters(){
+  const q=(document.getElementById('search-input').value||'').trim().toLowerCase();
+    const prod=document.getElementById('filter-product').value;
+  const source=document.getElementById('filter-source').value;
+
+  filteredOrders=allOrders.filter(o=>{
+    // Tab filter
+    if(currentTab!=='all'&&o.status!==currentTab)return false;
+    // Product filter
+    if(prod&&o.product!==prod)return false;
+    if(source&&(o.attribution_source||'unknown')!==source)return false;
+    // Search — name OR phone
+    if(q){
+      const nameMatch=(o.name||'').toLowerCase().includes(q);
+      const phoneMatch=(o.phone||'').includes(q);
+      if(!nameMatch&&!phoneMatch)return false;
+    }
+    // Period filter
+    if(!inPeriod(o))return false;
+    return true;
+  });
+
+  // Sort by selected field + direction
+  const sortField = document.getElementById('sort-field')?.value || 'created_at';
+  const sortDir   = document.getElementById('sort-dir')?.value   || 'desc';
+  filteredOrders.sort((a,b)=>{
+    const da=new Date(a[sortField]||a.created_at||0).getTime();
+    const db=new Date(b[sortField]||b.created_at||0).getTime();
+    return sortDir==='asc' ? da-db : db-da;
+  });
+
+  renderOrdersList();
+  updateTabCounts();
+  updateKPIs();
+  drawDonut();
+}
+
+// ── SORT ── (handled by dropdowns, applyFilters called on change)
+
+// ── PAGE SIZE ──
+function onPageSizeChange(){
+  const val=document.getElementById('page-size-select').value;
+  pageSize=val==='all'?'all':parseInt(val);
+  currentPage=1;
+  renderOrdersList();
+}
+
+// ── TABS ──
+function buildTabs(){
+  const tabs=[{k:'all',l:'All'},...STATUSES];
+  document.getElementById('tab-bar').innerHTML=tabs.map(t=>
+    `<button class="tab-btn${t.k===currentTab?' active':''}" id="tab-${t.k}" onclick="switchTab('${t.k}')">
+      ${t.l}<span class="tab-count" id="tc-${t.k}">0</span>
+    </button>`
+  ).join('');
+}
+
+function syncTabChrome(){
+  document.getElementById('stats-section').style.display=currentTab==='all'?'block':'none';
+  document.getElementById('bulk-bar').classList.toggle('show',currentTab==='confirmed');
+}
+
+function switchTab(k){
+  currentTab=k;
+  localStorage.setItem(OPERATOR_TAB_KEY,k);
+  currentPage=1;
+  selectedIds.clear();
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`tab-${k}`).classList.add('active');
+  syncTabChrome();
+  applyFilters();
+}
+
+function updateTabCounts(){
+  const periodOrders=allOrders.filter(o=>inPeriod(o));
+  const el=document.getElementById('tc-all');
+  if(el)el.textContent=periodOrders.length;
+  STATUSES.forEach(s=>{
+    const e=document.getElementById(`tc-${s.k}`);
+    if(e)e.textContent=periodOrders.filter(o=>o.status===s.k).length;
+  });
+  const cnt=document.getElementById('orders-count');
+  if(cnt)cnt.textContent=`${filteredOrders.length} orders`;
+}
+
+// ── DAILY TARGET ──
+function getDailyTarget(){return parseInt(localStorage.getItem('daily_target')||'0',10);}
+function setDailyTarget(n){localStorage.setItem('daily_target',String(n));}
+
+function promptSetTarget(){
+  const cur=getDailyTarget();
+  const val=prompt('Set daily confirmed orders target:',cur||'');
+  if(val===null)return;
+  const n=parseInt(val,10);
+  if(!isNaN(n)&&n>=0){setDailyTarget(n);updateDailyTarget();}
+}
+
+function updateDailyTarget(){
+  const target=getDailyTarget();
+  const banner=document.getElementById('daily-target-banner');
+  if(!banner)return;
+  if(!target){banner.style.display='none';return;}
+  banner.style.display='block';
+
+  // Count today's confirmed orders (Algeria time UTC+1)
+  const now=new Date();
+  const alg=new Date(now.getTime()+60*60*1000);
+  const todayStart=new Date(Date.UTC(alg.getUTCFullYear(),alg.getUTCMonth(),alg.getUTCDate())-60*60*1000);
+  const todayEnd=new Date(todayStart.getTime()+86400000);
+
+  const CONFIRMED_STATUSES=new Set(['confirmed','shipped','shipping','delivered','not_delivered','returned','attempt_1','attempt_2','attempt_3','suspended','rescheduled']);
+  const todayConfirmed=allOrders.filter(o=>{
+    if(!CONFIRMED_STATUSES.has(o.status))return false;
+    if(!o.created_at)return false;
+    const d=new Date(o.created_at.endsWith('Z')?o.created_at:o.created_at+'Z');
+    return d>=todayStart&&d<todayEnd;
+  }).length;
+
+  const pct=Math.min(100,Math.round(todayConfirmed/target*100));
+  const bar=document.getElementById('target-bar');
+  const cnt=document.getElementById('target-count');
+  const msg=document.getElementById('target-msg');
+
+  if(bar)bar.style.width=pct+'%';
+  if(bar)bar.style.background=pct>=100?'#22c55e':pct>=60?'linear-gradient(135deg,#ff2d8e,#a855f7)':'#e11d48';
+  if(cnt)cnt.textContent=`${todayConfirmed}/${target}`;
+
+  if(pct>=100)msg.textContent='🎯 Target reached!';
+  else if(pct>=75)msg.textContent=`Almost there — ${target-todayConfirmed} more to go`;
+  else if(pct>=50)msg.textContent=`Halfway — keep pushing`;
+  else msg.textContent=`${target-todayConfirmed} confirmed orders to reach today's target`;
+}
+
+// ── KPIs ──
+function updateKPIs(){
+  const orders=allOrders.filter(o=>inPeriod(o));
+  const total=orders.length;
+  const nonDraftOrders=orders.filter(o=>o.status!=='draft');
+  const realOrders=orders.filter(o=>o.from_draft!==true);
+  const nonDraftTotal=realOrders.length;
+  const delivered=orders.filter(o=>o.status==='delivered').length;
+  const confirmed=orders.filter(o=>CONFIRMATION_FLOW_STATUSES.has(o.status)).length;
+  const nonDraft=nonDraftOrders.length;
+  const confirmedFunnel=orders.filter(o=>CONFIRMATION_FLOW_STATUSES.has(o.status)).length;
+  const shippedFunnel=orders.filter(o=>['shipped','shipping','delivered','returned','not_delivered'].includes(o.status)).length;
+  const confRateAll=total?(confirmedFunnel/total*100).toFixed(1):'0.0';
+  const confRateNonDraft=nonDraft?(confirmedFunnel/nonDraft*100).toFixed(1):'0.0';
+  const delRateConfirmed=shippedFunnel?(delivered/shippedFunnel*100).toFixed(1):'0.0';
+  const delRateAll=nonDraft?(delivered/nonDraft*100).toFixed(1):'0.0';
+  let html=`<div class="kpi-card total"><div class="kpi-label"><span class="dot"></span>Total Orders</div><div class="kpi-value">${nonDraftTotal}</div></div>`;
+  STATUSES.forEach(s=>{
+    html+=`<div class="kpi-card"><div class="kpi-label"><span class="dot" style="background:${s.c}"></span>${s.l}</div><div class="kpi-value">${orders.filter(o=>o.status===s.k).length}</div></div>`;
+  });
+  html+=`<div class="kpi-card"><div class="kpi-label"><span class="dot"></span>Total</div><div class="kpi-value">${total}</div><div class="kpi-sub">Including drafts</div></div>`;
+  html+=`<div class="kpi-card rate"><div class="kpi-label"><span class="dot"></span>Confirmation Rate</div><div class="kpi-value">${confRateAll}%</div><div class="kpi-sub">Confirmed / all leads</div></div>
+         <div class="kpi-card rate"><div class="kpi-label"><span class="dot"></span>Confirmation Rate</div><div class="kpi-value">${confRateNonDraft}%</div><div class="kpi-sub">Confirmed / non-draft orders</div></div>
+         <div class="kpi-card rate"><div class="kpi-label"><span class="dot"></span>Delivery Rate</div><div class="kpi-value">${delRateConfirmed}%</div><div class="kpi-sub">Delivered / confirmed orders</div></div>
+         <div class="kpi-card rate"><div class="kpi-label"><span class="dot"></span>Delivery Rate</div><div class="kpi-value">${delRateAll}%</div><div class="kpi-sub">Delivered / all leads</div></div>`;
+  document.getElementById('kpi-grid').innerHTML=html;
+  updateDailyTarget();
+}
+
+// ── DONUT ──
+function drawDonut(){
+  const orders=allOrders.filter(o=>inPeriod(o));
+  const counts=STATUSES.map(s=>({...s,n:orders.filter(o=>o.status===s.k).length})).filter(s=>s.n>0);
+  const total=counts.reduce((a,b)=>a+b.n,0)||1;
+  const cx=60,cy=60,r=48,stroke=16;
+  let angle=-Math.PI/2,paths='';
+  counts.forEach(s=>{
+    const slice=(s.n/total)*2*Math.PI;
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    angle+=slice;
+    const x2=cx+r*Math.cos(angle),y2=cy+r*Math.sin(angle);
+    paths+=`<path d="M${cx} ${cy} L${x1} ${y1} A${r} ${r} 0 ${slice>Math.PI?1:0} 1 ${x2} ${y2} Z" fill="${s.c}" opacity="0.85"/>`;
+  });
+  paths+=`<circle cx="${cx}" cy="${cy}" r="${r-stroke}" fill="#0a0a0a"/>`;
+  paths+=`<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="13" font-weight="800">${total}</text>`;
+  document.getElementById('donut-svg').innerHTML=paths;
+  document.getElementById('chart-legend').innerHTML=counts.slice(0,6).map(s=>
+    `<div class="legend-item"><div class="legend-dot" style="background:${s.c}"></div><div class="legend-label">${s.l}</div><div class="legend-val">${s.n}</div></div>`
+  ).join('');
+}
+
+// ── ORDERS LIST ──
+function renderOrdersList(){
+  const el=document.getElementById('orders-list');
+  if(!filteredOrders.length){
+    el.innerHTML=`<div class="empty-wrap"><span>No orders found</span></div>`;
+    document.getElementById('pagination').innerHTML='';
+    return;
+  }
+
+  const isConf=currentTab==='confirmed';
+
+  // Pagination
+  let pageOrders;
+  if(pageSize==='all'){
+    pageOrders=filteredOrders;
+    document.getElementById('pagination').innerHTML='';
+  } else {
+    const total=filteredOrders.length;
+    const totalPages=Math.ceil(total/pageSize);
+    if(currentPage>totalPages)currentPage=1;
+    const start=(currentPage-1)*pageSize;
+    pageOrders=filteredOrders.slice(start,start+pageSize);
+    renderPagination(totalPages);
+  }
+
+  el.innerHTML=pageOrders.map(o=>{
+    const checked=selectedIds.has(o.id);
+    const dt = o.created_at ? toAlgeriaDate(o.created_at) : null;
+    const dateStr = dt ? dt.toLocaleDateString('fr-DZ',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '';
+    const timeStr = dt ? dt.toLocaleTimeString('fr-DZ',{hour:'2-digit',minute:'2-digit',hour12:false}) : '';
+    const calls = Number(o.call_count||0);
+    const clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+    return `<div class="order-card${checked?' selected':''}" id="card-${o.id}" style="--strip:${statusColor(o.status)}">
+      <div class="card-top-row">
+        <div class="card-checkbox${isConf?' visible':''}${checked?' checked':''}" onclick="toggleSelect(${o.id})"></div>
+        <div class="card-main" onclick="openDetail(${o.id})">
+          <div class="card-name-price">
+            <div class="order-name">${esc(o.name)}</div>
+            <div class="order-price">${Number(o.prix_total||0).toLocaleString()} DZD</div>
+          </div>
+          <div class="order-meta">
+            <b>${(Array.isArray(o.items)&&o.items.length)?esc(o.items.map(it=>(it.product||it.product_slug||it.slug||'')+' '+sizeLabel(it)).join('، ')):esc(o.product)+(o.variable?' - '+esc(o.variable):'')}</b><br/>
+            Location: ${o.type_livraison==='pickup'?'Stop Desk - '+esc(o.station_code||'?'):esc(o.commune)+', '+esc(o.wilaya)}<br/>
+            Phone: ${esc(o.phone)}
+          </div>
+           <span class="status-badge s-${o.status}">${statusLabel(o.status)}</span>${sourceBadge(o.attribution_source)}
+          <span class="card-time">${clockSvg}${dateStr}${timeStr?' · '+timeStr:''}</span>
+        </div>
+      </div>
+      <div class="card-note-wrap" onclick="event.stopPropagation()">
+        <div class="card-note-label">📝 Note</div>
+        <textarea class="card-note" id="note-${o.id}" placeholder="Add a note…"
+          onclick="event.stopPropagation()"
+          onblur="saveCardNote(${o.id},this)">${esc(o.notes||'')}</textarea>
+      </div>
+      <div class="card-actions">
+        <button class="btn-wa-sm" onclick="openWhatsApp('${esc(o.phone)}')">${waIcon()}</button>
+        <button class="btn-call-sm" onclick="callCustomer('${esc(o.phone)}',${o.id})">Call${calls>0?`<span class="call-badge" id="callbadge-${o.id}">${calls}</span>`:''}</button>
+        <select class="card-status-select" onchange="updateStatusCard(this,${o.id})">
+          ${STATUSES.map(s=>`<option value="${s.k}"${o.status===s.k?' selected':''}>${s.l}</option>`).join('')}
+        </select>
+        ${o.status==='confirmed'?`<button class="btn-ship-sm" onclick="shipSingle(${o.id})">Ship</button>`:''}
+        <button class="btn-detail" onclick="openDetail(${o.id})">Details</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateBulkCount();
+}
+
+function renderPagination(totalPages){
+  const pg=document.getElementById('pagination');
+  if(totalPages<=1){pg.innerHTML='';return;}
+  let html=`<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>Prev</button>`;
+  // Show max 5 page buttons
+  let start=Math.max(1,currentPage-2);
+  let end=Math.min(totalPages,start+4);
+  if(end-start<4)start=Math.max(1,end-4);
+  for(let i=start;i<=end;i++){
+    html+=`<button class="page-btn${i===currentPage?' active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html+=`<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next</button>`;
+  html+=`<span class="page-info">${currentPage}/${totalPages}</span>`;
+  pg.innerHTML=html;
+}
+
+function goPage(p){
+  currentPage=p;
+  renderOrdersList();
+  document.getElementById('orders-list').scrollIntoView({behavior:'smooth'});
+}
+
+// ── BULK SHIP ──
+function toggleSelect(id){
+  selectedIds.has(id)?selectedIds.delete(id):selectedIds.add(id);
+  const card=document.getElementById(`card-${id}`);
+  if(!card)return;
+  const cb=card.querySelector('.card-checkbox');
+  card.classList.toggle('selected',selectedIds.has(id));
+  cb.classList.toggle('checked',selectedIds.has(id));
+  updateBulkCount();
+}
+function toggleSelectAll(){
+  const ids=filteredOrders.filter(o=>o.status==='confirmed').map(o=>o.id);
+  const allSel=ids.every(id=>selectedIds.has(id));
+  ids.forEach(id=>allSel?selectedIds.delete(id):selectedIds.add(id));
+  renderOrdersList();
+}
+function updateBulkCount(){document.getElementById('bulk-count').textContent=`${selectedIds.size} selected`;}
+
+// FIX: Stop desk shipping — properly pass station_code
+async function shipSingle(id){
+  const o=allOrders.find(x=>x.id===id);
+  if(!o)return;
+  if(o.type_livraison==='pickup'&&!o.station_code){
+    toast('Edit order and select a stop desk first',true);
+    return;
+  }
+  toast('Shipping...');
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    const payload={
+      orderId: o.id,
+      order: o,
+      stationCode: o.station_code || null
+    };
+    const r=await fetch('/api/ship-order',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${session?.access_token||''}`},
+      body:JSON.stringify(payload)
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||'Failed');
+    o.status='shipped';
+    o.tracking_number=data.tracking_number;
+    o.shipping_agency='noest';
+    await loadOrders();
+    toast('Shipped! #'+data.tracking_number);
+  }catch(e){toast('Error: '+e.message,true);}
+}
+
+async function bulkShip(){
+  if(!selectedIds.size)return;
+  const ids=[...selectedIds];
+  const missing=ids.filter(id=>{
+    const o=allOrders.find(x=>x.id===id);
+    return o&&o.type_livraison==='pickup'&&!o.station_code;
+  });
+  if(missing.length){
+    toast(`${missing.length} orders missing stop desk`,true);
+    return;
+  }
+  toast(`Shipping ${ids.length} orders...`);
+  const{data:{session}}=await sb.auth.getSession();
+  const payloadOrders=ids.map(id=>{const o=allOrders.find(x=>x.id===id);return o?{orderId:o.id,order:o,stationCode:o.station_code||null}:null;}).filter(Boolean);
+  try{
+    const r=await fetch('/api/ship-orders-bulk',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${session?.access_token||''}`},
+      body:JSON.stringify({orders:payloadOrders})
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||'Bulk ship failed');
+    const results=data.results||{};
+    let ok=0,fail=0;
+    for(const o of allOrders){
+      const res=results[o.id];
+      if(res&&res.success){o.status='shipped';o.tracking_number=res.tracking_number;ok++;}
+      else if(res&&res.error){fail++;}
+    }
+    selectedIds.clear();
+    await loadOrders();
+    toast(`${ok} shipped${fail?`, ${fail} failed`:''}`,fail>0);
+  }catch(e){toast('Error: '+e.message,true);}
+}
+
+// ── INLINE STATUS UPDATE ──
+async function updateStatusCard(sel,id){
+  const newStatus=sel.value;
+  const o=allOrders.find(x=>x.id===id);
+  if(!o)return;
+  // Duplicate check on confirm
+  if(newStatus==='confirmed'){
+    const dups=getDuplicatesForOrder(o);
+    if(dups.length){
+      const names=dups.map(d=>`${d.name} [${d.status}]`).join(', ');
+      if(!confirm(`⚠️ Duplicate phone detected!\nSame number found in: ${names}\n\nStill confirm this order?`)){
+        sel.value=o.status;
+        return;
+      }
+    }
+  }
+  const old=o.status;
+  sel.disabled=true;
+  const patchBody={status:newStatus};
+  if(newStatus==='confirmed') patchBody.confirmed_at=new Date().toISOString();
+  await sbFetch(`orders?id=eq.${id}`,{method:'PATCH',body:JSON.stringify(patchBody)});
+  await sbFetch('order_history',{method:'POST',
+    body:JSON.stringify({order_id:o.order_id,old_status:old,new_status:newStatus,changed_by:'operator'})});
+  o.status=newStatus;
+  if(newStatus==='confirmed') o.confirmed_at=new Date().toISOString();
+  sel.disabled=false;
+  // Update in place — no full reload, so scroll position is preserved.
+  refreshCardInPlace(o);
+  updateTabCounts();
+  updateKPIs();
+  drawDonut();
+  toast('Status updated');
+}
+
+// Re-render a single order card in place (keeps scroll position). If the order no longer
+// belongs in the current tab/filter, remove its card instead of rebuilding the whole list.
+function refreshCardInPlace(o){
+  const card=document.getElementById(`card-${o.id}`);
+  const stillMatches = (currentTab==='all'||o.status===currentTab) && filteredOrders.some(x=>x.id===o.id);
+  if(!stillMatches){
+    // status moved it out of this tab: drop from filtered list + remove card
+    filteredOrders=filteredOrders.filter(x=>x.id!==o.id);
+    if(card)card.style.transition='opacity .2s',card.style.opacity='0',setTimeout(()=>card.remove(),200);
+    updateTabCounts();
+    return;
+  }
+  if(!card)return;
+  // rebuild just the badge + status select + strip color
+  card.style.setProperty('--strip',statusColor(o.status));
+  const badge=card.querySelector('.status-badge');
+  if(badge){badge.className=`status-badge s-${o.status}`;badge.textContent=statusLabel(o.status);}
+  const sel=card.querySelector('.card-status-select');
+  if(sel)sel.value=o.status;
+}
+
+// ── DETAIL ──
+let _listScrollY=0;
+function openDetail(id){
+  currentOrder=allOrders.find(o=>o.id===id);
+  if(!currentOrder)return;
+  // Remember where the list was scrolled so we can restore it when we close the popup.
+  _listScrollY=window.scrollY||window.pageYOffset||0;
+  const dups=getDuplicatesForOrder(currentOrder);
+  renderDetail(dups);
+  document.getElementById('screen-detail').classList.add('active');
+  document.getElementById('tab-bar').style.display='none';
+  // lock the background list from scrolling behind the popup
+  document.body.style.overflow='hidden';
+  // detail body starts at the top (it scrolls internally, not the window)
+  const ds=document.querySelector('#screen-detail .detail-scroll');
+  if(ds)ds.scrollTop=0;
+}
+
+function renderDetail(dups=[]){
+  const o=currentOrder;
+  const dateStr=o.created_at?toAlgeriaDate(o.created_at).toLocaleString('fr-DZ'):'';
+  const dupHtml=dups.length?`<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#f59e0b;display:flex;gap:8px"><span style="font-size:15px">&#x26A0;&#xFE0F;</span><div><b>Duplicate phone!</b> Same number in: ${dups.map(d=>`${esc(d.name)} [${esc(d.status)}]`).join(', ')}</div></div>`:'';
+  document.getElementById('detail-content').innerHTML=`
+    ${dupHtml}
+    <div class="detail-section">
+      <div class="detail-section-title">Customer</div>
+      <div class="customer-name-big">${esc(o.name)}</div>
+      <div class="customer-location">Location: ${o.type_livraison==='pickup'?`Stop Desk - ${esc(o.station_code||'Not set')}`:esc(o.commune)+', '+esc(o.wilaya)}</div>
+      <div class="phone-row">
+        <div class="phone-number">${esc(o.phone)}</div>
+        <button class="btn-whatsapp" onclick="openWhatsApp('${esc(o.phone)}')">${waIcon()}</button>
+        <button class="btn-call" onclick="callCustomer('${esc(o.phone)}',${o.id})">Call</button>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Order</div>
+      ${(Array.isArray(o.items)&&o.items.length)
+        ? o.items.map(it=>`<div class="price-row"><span class="price-label">${esc((it.product||it.product_slug||it.slug||'')+' '+sizeLabel(it))}${it.is_free?' 🎁':''}</span><span>${it.is_free?'مجانية':Number(it.line_price||it.price||0).toLocaleString()+' DZD'}</span></div>`).join('')
+        : `<div class="price-row"><span class="price-label">${esc(o.product)}${o.variable?' - '+esc(o.variable):''}</span><span></span></div>`}
+      <div class="price-row"><span class="price-label">Product Price</span><span>${Number((o.prix_total||0)-(o.shipping_cost||0)).toLocaleString()} DZD</span></div>
+      <div class="price-row"><span class="price-label">Shipping</span><span>${Number(o.shipping_cost||0).toLocaleString()} DZD</span></div>
+      <div class="price-row"><span class="price-label">Total</span><span>${Number(o.prix_total||0).toLocaleString()} DZD</span></div>
+       <div style="font-size:11px;color:#444;margin-top:8px">Date: ${dateStr} - #${esc(o.order_id)} ${sourceBadge(o.attribution_source)}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Status</div>
+      <select class="status-dropdown" onchange="updateStatusDetail(this.value)">
+        ${STATUSES.map(s=>`<option value="${s.k}"${o.status===s.k?' selected':''}>${s.l}</option>`).join('')}
+      </select>
+    </div>
+    ${o.status==='confirmed'?`<div class="detail-section"><div class="detail-section-title">Ship Order</div>
+      ${o.type_livraison==='pickup'&&!o.station_code?`<div style="color:#f59e0b;font-size:13px;margin-bottom:8px">Warning: no stop desk selected. Tap Edit first.</div>`:''}
+      <button class="ship-btn" onclick="shipSingle(${o.id})">Send to Noest Express</button>
+    </div>`:''}
+    ${o.status==='shipped'&&o.tracking_number?`<div class="detail-section"><div class="detail-section-title">Tracking</div>
+      <div style="font-size:13px;color:#888;margin-bottom:8px">Noest - <b style="color:#fff">${esc(o.tracking_number)}</b></div>
+      <button class="track-btn" onclick="openTracking()">Track Shipment</button>
+    </div>`:''}
+    <div class="detail-section">
+      <div class="detail-section-title">Operator Note</div>
+      <textarea class="note-field" id="note-field" placeholder="Write a note...">${esc(o.notes||'')}</textarea>
+      <button class="save-note-btn" onclick="saveNote()">Save Note</button>
+    </div>
+    <div class="action-row">
+      <button class="btn-delete" onclick="deleteOrder()">Delete</button>
+      <button class="btn-edit" onclick="openEdit()">Edit</button>
+    </div>
+    <div class="detail-bottom" style="margin-top:14px">
+      <div class="order-num"># ${esc(o.order_id)}</div>
+      <button class="history-btn" onclick="openHistory()">History</button>
+    </div>`;
+}
+
+function closeDetail(){
+  // Just hide the popup — the main list screen stayed active underneath.
+  document.getElementById('screen-detail').classList.remove('active');
+  document.getElementById('tab-bar').style.display='flex';
+  document.body.style.overflow=''; // unlock background scroll
+  currentOrder=null;
+  // Restore the list scroll position (body was locked while popup was open).
+  requestAnimationFrame(()=>window.scrollTo(0,_listScrollY));
+}
+
+// ── ACTIONS ──
+async function callCustomer(phone,id){
+  // Increment persisted call_count, update badge in place, then place the call.
+  if(id!=null){
+    const o=allOrders.find(x=>x.id===id);
+    if(o){
+      const next=Number(o.call_count||0)+1;
+      o.call_count=next;
+      // update badge in the DOM immediately (no re-render)
+      const btn=document.querySelector(`#card-${id} .btn-call-sm`);
+      if(btn){
+        let b=document.getElementById(`callbadge-${id}`);
+        if(!b){b=document.createElement('span');b.className='call-badge';b.id=`callbadge-${id}`;btn.appendChild(b);}
+        b.textContent=next;
+      }
+      // persist in background (don't block the call)
+      sbFetch(`orders?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({call_count:next})}).catch(()=>{});
+    }
+  }
+  window.location.href=`tel:${phone}`;
+}
+
+// Save a card's note on blur (click away). Updates in place, no reload, no scroll jump.
+async function saveCardNote(id,ta){
+  const o=allOrders.find(x=>x.id===id);
+  if(!o)return;
+  const note=ta.value;
+  if((o.notes||'')===note)return; // nothing changed
+  o.notes=note;
+  try{
+    await sbFetch(`orders?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({notes:note})});
+    ta.classList.add('saved');
+    setTimeout(()=>ta.classList.remove('saved'),1200);
+    // keep detail view in sync if it's the same order
+    if(currentOrder&&currentOrder.id===id)currentOrder.notes=note;
+  }catch(e){
+    toast('Could not save note',true);
+  }
+}
+function openWhatsApp(phone){
+  const p=phone.replace(/\D/g,'');
+  window.open(`https://wa.me/213${p.replace(/^0/,'')}`, '_blank');
+}
+function openTracking(){
+  if(!currentOrder?.tracking_number)return;
+  window.open(`https://app.noest-dz.com/track/${currentOrder.tracking_number}`,'_blank');
+}
+async function updateStatusDetail(newStatus){
+  const o=currentOrder,old=o.status;
+  await sbFetch(`orders?id=eq.${o.id}`,{method:'PATCH',body:JSON.stringify({status:newStatus})});
+  await sbFetch('order_history',{method:'POST',
+    body:JSON.stringify({order_id:o.order_id,old_status:old,new_status:newStatus,changed_by:'operator'})});
+  o.status=newStatus;
+  // update the in-memory list object + its card without a full reload
+  const listObj=allOrders.find(x=>x.id===o.id);
+  if(listObj)listObj.status=newStatus;
+  renderDetail();
+  updateTabCounts();updateKPIs();drawDonut();
+  toast('Status updated');
+}
+async function saveNote(){
+  const note=document.getElementById('note-field').value;
+  await sbFetch(`orders?id=eq.${currentOrder.id}`,{method:'PATCH',body:JSON.stringify({notes:note})});
+  currentOrder.notes=note;
+  // sync the list object + its card textarea (if rendered) without reloading
+  const listObj=allOrders.find(x=>x.id===currentOrder.id);
+  if(listObj)listObj.notes=note;
+  const cardTa=document.getElementById(`note-${currentOrder.id}`);
+  if(cardTa)cardTa.value=note;
+  toast('Note saved');
+}
+async function deleteOrder(){
+  if(!confirm('Delete this order? Cannot be undone.'))return;
+  await sbFetch(`orders?id=eq.${currentOrder.id}`,{method:'DELETE'});
+  allOrders=allOrders.filter(o=>o.id!==currentOrder.id);
+  closeDetail();
+  applyFilters();
+  toast('Order deleted');
+}
+
+// ── HISTORY ──
+async function openHistory(){
+  // Fetch both status history and field edits in parallel
+  const [rStatus, rEdits] = await Promise.all([
+    sbFetch(`order_history?order_id=eq.${currentOrder.order_id}&order=changed_at.desc`),
+    sbFetch(`order_edits?order_id=eq.${currentOrder.order_id}&order=changed_at.desc`)
+  ]);
+  const statusRows = (await rStatus.json()) || [];
+  const editRows = (await rEdits.json()) || [];
+
+  // Merge and sort by date descending
+  const allRows = [
+    ...statusRows.map(h=>({...h, _type:'status'})),
+    ...editRows.map(h=>({...h, _type:'edit', old_status:h.old_value, new_status:h.new_value}))
+  ].sort((a,b)=>new Date(b.changed_at)-new Date(a.changed_at));
+
+  document.getElementById('history-list').innerHTML=allRows.length
+    ?allRows.map(h=>{
+      const time=new Date(h.changed_at).toLocaleString('fr-DZ');
+      if(h._type==='edit'){
+        return `<div class="history-item">
+          <span class="history-type field">EDIT</span><br/>
+          <b style="color:#888">${esc(h.field_name)}</b>: 
+          <span style="color:#555">${esc(h.old_status||'-')}</span>
+          <span class="history-arrow">-></span>
+          <span style="color:#fff;font-weight:700">${esc(h.new_status||'-')}</span>
+          <div class="history-time">By ${esc(h.changed_by||'operator')} - ${time}</div>
+        </div>`;
+      }
+      return `<div class="history-item">
+        <span class="history-type status">STATUS</span><br/>
+        <span style="color:#888">${esc(h.old_status||'-')}</span>
+        <span class="history-arrow">-></span>
+        <span style="color:#fff;font-weight:700">${esc(h.new_status||'-')}</span>
+        <div class="history-time">By ${esc(h.changed_by||'operator')} - ${time}</div>
+      </div>`;
+    }).join('')
+    :'<div style="color:#444;font-size:13px">No history yet.</div>';
+  document.getElementById('history-modal').classList.add('open');
+}
+
+// ── CREATE ORDER ──
+function createWilayaParts(){
+  const value=document.getElementById('create-wilaya')?.value||'';
+  const match=value.match(/^(\d+)\s*-\s*(.*)$/);
+  return {id:match?Number(match[1]):0,name:match?match[2].trim():value};
+}
+function populateCreateWilayas(){
+  const sel=document.getElementById('create-wilaya');
+  if(!sel)return;
+  sel.innerHTML='<option value="">Select Wilaya</option>'+WILAYA_NAMES.map(w=>`<option value="${esc(w)}">${esc(w)}</option>`).join('');
+}
+function populateCreateCommunes(){
+  const sel=document.getElementById('create-commune');
+  const key=document.getElementById('create-wilaya')?.value||'';
+  const names=WILAYA_DATA[key]||[];
+  if(sel)sel.innerHTML='<option value="">Select Commune</option>'+names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+}
+async function populateCreateDesks(){
+  const sel=document.getElementById('create-desk');
+  if(!sel)return;
+  if(!noestDesks){try{const r=await fetch('/api/noest-desks');if(r.ok)noestDesks=await r.json();}catch{}}
+  const {id}=createWilayaParts();
+  const entries=Object.entries(noestDesks||{}).filter(([code])=>id&&new RegExp('^'+id+'[A-Z]').test(code));
+  sel.innerHTML='<option value="">Select Stop Desk</option>'+entries.map(([code,d])=>`<option value="${esc(code)}">${esc(d.name||code)}</option>`).join('');
+}
+function createSelectedProduct(){
+  const slug=document.getElementById('create-product')?.value||'';
+  return (window.__operatorProductList||[]).find(p=>p.slug===slug)||null;
+}
+function createProductVariants(product){
+  const raw=product?.variants;
+  if(Array.isArray(raw))return raw;
+  if(raw&&typeof raw==='object')return Object.entries(raw).map(([name,value])=>typeof value==='object'?{name,...value}:{name,price:value});
+  return [{name:'Standard',label:'Standard',price:Number(product?.price||0)}];
+}
+function onCreateProductChange(){
+  const product=createSelectedProduct();
+  const sel=document.getElementById('create-variant');
+  const variants=createProductVariants(product);
+  if(sel)sel.innerHTML=variants.map(v=>{const label=v.label||v.name||'Standard';return `<option value="${esc(label)}">${esc(label)} — ${Number(v.price||product?.price||0).toLocaleString()} DZD</option>`;}).join('');
+  updateCreateTotal();
+}
+function onCreateTypeChange(){
+  const pickup=document.getElementById('create-type')?.value==='pickup';
+  document.getElementById('create-commune-wrap').style.display=pickup?'none':'block';
+  document.getElementById('create-desk-wrap').style.display=pickup?'block':'none';
+  if(pickup)populateCreateDesks();
+  updateCreateTotal();
+}
+async function onCreateWilayaChange(){
+  populateCreateCommunes();
+  const {id}=createWilayaParts();
+  window.__createShipping=null;
+  if(id){
+    try{const r=await sbFetch(`shipping_rates?wilaya_id=eq.${id}&select=home_delivery,stop_desk&limit=1`);const rows=await r.json();window.__createShipping=rows[0]||null;}catch{}
+  }
+  if(document.getElementById('create-type')?.value==='pickup')await populateCreateDesks();
+  updateCreateTotal();
+}
+function createSelectedPrice(){
+  const product=createSelectedProduct();
+  const variant=createProductVariants(product).find(v=>(v.label||v.name||'Standard')===document.getElementById('create-variant')?.value);
+  return Number(variant?.price||product?.price||0);
+}
+function updateCreateTotal(){
+  const el=document.getElementById('create-total-display');
+  if(!el)return;
+  const price=createSelectedPrice();
+  const shipping=window.__createShipping;
+  const type=document.getElementById('create-type')?.value||'home';
+  const ship=Number(shipping?.[type==='pickup'?'stop_desk':'home_delivery']||0);
+  el.textContent=price&&ship?`Total: ${(price+ship).toLocaleString()} DZD`:'Total: Select product and wilaya';
+}
+async function loadCreateProducts(){
+  if(!window.__operatorProductList){
+    try{const r=await sbFetch('products?select=name,slug,price,variants,type&active=eq.true&order=name.asc&limit=500');const rows=await r.json();window.__operatorProductList=r.ok&&Array.isArray(rows)?rows:[];}catch{window.__operatorProductList=[];}
+  }
+  const sel=document.getElementById('create-product');
+  if(sel){sel.innerHTML='<option value="">Select Product</option>'+(window.__operatorProductList||[]).map(p=>`<option value="${esc(p.slug)}">${esc(p.name)}</option>`).join('');}
+}
+async function openCreateOrder(){
+  document.getElementById('create-name').value='';
+  document.getElementById('create-phone').value='';
+  document.getElementById('create-notes').value='';
+  document.getElementById('create-type').value='home';
+  document.getElementById('create-commune-wrap').style.display='block';
+  document.getElementById('create-desk-wrap').style.display='none';
+  populateCreateWilayas();
+  document.getElementById('create-variant').innerHTML='<option value="">Select variant</option>';
+  window.__createShipping=null;
+  document.getElementById('create-total-display').textContent='Total: Select product and wilaya';
+  document.getElementById('create-order-modal').classList.add('open');
+  await loadCreateProducts();
+}
+async function submitCreateOrder(){
+  const btn=document.getElementById('create-order-submit');
+  const product=createSelectedProduct();
+  const {id,wilayaName}=(()=>{const p=createWilayaParts();return {...p,wilayaName:p.name};})();
+  const type=document.getElementById('create-type').value;
+  const name=document.getElementById('create-name').value.trim();
+  const phone=document.getElementById('create-phone').value.replace(/\s/g,'');
+  const commune=document.getElementById('create-commune').value;
+  const desk=document.getElementById('create-desk').value;
+  if(!name||!/^0[567]\d{8}$/.test(phone)||!product||!id||(type==='home'&&!commune)||(type==='pickup'&&!desk)){toast('Complete all order fields first',true);return;}
+  btn.disabled=true;btn.textContent='Creating…';
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session?.access_token)throw new Error('Your session expired. Please sign in again.');
+    const r=await fetch('/api/operator-create-order',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({name,phone,wilaya:wilayaName,wilaya_id:id,commune:type==='home'?commune:'',delivery_type:type,station_code:type==='pickup'?desk:null,product_slug:product.slug,variant_label:document.getElementById('create-variant').value,notes:document.getElementById('create-notes').value.trim()})});
+    const result=await r.json().catch(()=>({}));
+    if(!r.ok||!result.ok)throw new Error(result.error||'Failed to create order');
+    closeModal('create-order-modal');await loadOrders();toast(`Order #${result.order_id} created`);
+  }catch(error){toast(error.message||'Failed to create order',true);}
+  finally{btn.disabled=false;btn.textContent='Create Order';}
+}
+
+// ── EDIT MODAL ──
+async function openEdit(){
+  const o=currentOrder;
+  if(!noestDesks){
+    try{
+      const r=await fetch('/api/noest-desks');
+      if(r.ok)noestDesks=await r.json();
+    }catch{}
+  }
+  const wSel=document.getElementById('edit-wilaya');
+  wSel.innerHTML='<option value="">Select Wilaya</option>'+
+    WILAYA_NAMES.map(w=>`<option value="${esc(w)}">${esc(w)}</option>`).join('');
+  document.getElementById('edit-name').value=o.name||'';
+  document.getElementById('edit-phone').value=o.phone||'';
+  document.getElementById('edit-type').value=o.type_livraison||'home';
+  const prodSec=document.getElementById('edit-product-section');
+  const isCart=Array.isArray(o.items)&&o.items.length>0;
+  if(isCart){
+    // Fetch product list for dropdowns (cached)
+    if(!window.__productList){
+      try{
+        const r=await sbFetch('products?select=name,slug,images&active=eq.true&order=name.asc');
+        if(r.ok) window.__productList=await r.json();
+      }catch{}
+      if(!window.__productList) window.__productList=[];
+    }
+
+    const editItems=o.items.map(it=>({...it}));
+    document.getElementById('edit-modal').__editItems=editItems;
+
+    function renderCartRows(){
+      const wrap=document.getElementById('edit-cart-rows');
+      if(!wrap)return;
+      wrap.innerHTML=editItems.map((it,i)=>{
+        const currentName=it.product||it.product_slug||it.slug||'';
+        const matched=window.__productList.find(p=>p.name===currentName||p.slug===(it.product_slug||it.slug));
+        const unknownOpt=!matched?`<option value="${esc(currentName)}">${esc(currentName)||'Unknown'}</option>`:'';
+        const opts=window.__productList.map(p=>`<option value="${esc(p.name)}"${(matched?p.name===currentName:false)||p.slug===(it.product_slug||it.slug)?' selected':''}>${esc(p.name)}</option>`).join('');
+        const pickerId=`prod-picker-cart-${i}`;
+        return `<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #1a1a1a">
+          <div class="prod-dropdown-wrap" style="flex:1">
+            <div id="${pickerId}"></div>
+          </div>
+          <select class="edit-select" style="width:62px;font-size:13px;padding:7px 6px"
+            onchange="(function(el){const m=document.getElementById('edit-modal').__editItems[${i}];m.size=el.value;m.variant=el.value==='M'?'30×40 cm':'40×60 cm'})(this)">
+            <option value="M"${sizeLabel(it)==='M'?' selected':''}>M</option>
+            <option value="L"${sizeLabel(it)==='L'?' selected':''}>L</option>
+          </select>
+          <input type="number" class="edit-input" style="width:80px;font-size:13px;padding:7px 8px;text-align:right" min="0"
+            value="${it.is_free?0:Number(it.line_price||it.price||0)}"
+            placeholder="0"
+            oninput="(function(el){const m=document.getElementById('edit-modal').__editItems[${i}];const v=parseFloat(el.value)||0;m.line_price=v;m.price=v;m.is_free=(v===0);calcTotal()})(this)"/>
+          <button onclick="(function(){document.getElementById('edit-modal').__editItems.splice(${i},1);window.__rerenderCartRows&&window.__rerenderCartRows();calcTotal()})()"
+            style="background:#1a0a0a;border:1px solid #3a1a1a;color:#e11d48;border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+            ×
+          </button>
+        </div>`;
+      }).join('')+
+      `<button onclick="(function(){
+          const pl=window.__productList;
+          const firstName=pl&&pl.length?pl[0].name:'';
+          document.getElementById('edit-modal').__editItems.push({product:firstName,size:'M',variant:'30×40 cm',is_free:false,line_price:0,price:0});
+          window.__rerenderCartRows&&window.__rerenderCartRows();
+          calcTotal();
+        })()"
+        style="width:100%;margin-top:10px;background:#0a0a0a;border:1px dashed #333;color:#888;border-radius:10px;padding:9px;font-size:13px;cursor:pointer">
+        + Add Item
+      </button>`;
+    }
+    function renderAndInitPickers(){
+      renderCartRows();
+      // Init a searchable picker for each row
+      editItems.forEach((it,i)=>{
+        const currentName=it.product||it.product_slug||it.slug||'';
+        const matched=window.__productList.find(p=>p.name===currentName||p.slug===(it.product_slug||it.slug));
+        const pickerId=`prod-picker-cart-${i}`;
+        makeProductPicker(pickerId, matched?.name||currentName, (name,product)=>{
+          const item=document.getElementById('edit-modal').__editItems[i];
+          item.product=name;
+          if(product?.slug)item.product_slug=product.slug;
+          const image=productImage(product);
+          if(image)item.image=image;
+          else delete item.image;
+        });
+      });
+    }
+    window.__rerenderCartRows=renderAndInitPickers;
+
+    prodSec.innerHTML=`
+      <div class="edit-label" style="margin-bottom:8px">ORDER ITEMS</div>
+      <div id="edit-cart-rows" style="margin-bottom:12px"></div>`;
+    renderAndInitPickers();
+
+  } else {
+    // Fetch product list if not cached yet
+    if(!window.__productList){
+      try{
+        const r=await sbFetch('products?select=name,slug,images&active=eq.true&order=name.asc');
+        if(r.ok) window.__productList=await r.json();
+      }catch{}
+      if(!window.__productList) window.__productList=[];
+    }
+    // Convert single-product order to items array so we can use same add/remove logic
+    const initName=o.product||'';
+    const initSize=o.variable&&o.variable.includes('60')?'L':'M';
+    const editItemsNorm=[{product:initName,size:initSize,variant:initSize==='M'?'30×40 cm':'40×60 cm',is_free:false,line_price:Number(o.prix_total||0)-(o.shipping_cost||0),price:Number(o.prix_total||0)-(o.shipping_cost||0)}];
+    document.getElementById('edit-modal').__editItems=editItemsNorm;
+
+    function renderNonCartRows(){
+      const wrap=document.getElementById('edit-cart-rows');
+      if(!wrap)return;
+      const items=document.getElementById('edit-modal').__editItems;
+      wrap.innerHTML=items.map((it,i)=>`
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #1a1a1a">
+          <div class="prod-dropdown-wrap" style="flex:1"><div id="prod-picker-nc-${i}"></div></div>
+          <select class="edit-select" style="width:62px;font-size:13px;padding:7px 6px"
+            onchange="(function(el){const m=document.getElementById('edit-modal').__editItems[${i}];m.size=el.value;m.variant=el.value==='M'?'30×40 cm':'40×60 cm'})(this)">
+            <option value="M"${(it.size||'M')==='M'?' selected':''}>M</option>
+            <option value="L"${(it.size||'M')==='L'?' selected':''}>L</option>
+          </select>
+          <input type="number" class="edit-input" style="width:80px;font-size:13px;padding:7px 8px;text-align:right" min="0"
+            value="${Number(it.line_price||0)}" placeholder="0"
+            oninput="(function(el){const m=document.getElementById('edit-modal').__editItems[${i}];const v=parseFloat(el.value)||0;m.line_price=v;m.price=v;m.is_free=(v===0);calcTotal()})(this)"/>
+          ${items.length>1?`<button onclick="(function(){document.getElementById('edit-modal').__editItems.splice(${i},1);window.__rerenderCartRows&&window.__rerenderCartRows();calcTotal()})()"
+            style="background:#1a0a0a;border:1px solid #3a1a1a;color:#e11d48;border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">×</button>`:''}
+        </div>`).join('')+
+      `<button onclick="(function(){
+          const pl=window.__productList||[];
+          const fn=pl.length?pl[0].name:'';
+          document.getElementById('edit-modal').__editItems.push({product:fn,size:'M',variant:'30×40 cm',is_free:false,line_price:0,price:0});
+          window.__rerenderCartRows&&window.__rerenderCartRows();calcTotal();})()"
+        style="width:100%;margin-top:10px;background:#0a0a0a;border:1px dashed #333;color:#888;border-radius:10px;padding:9px;font-size:13px;cursor:pointer">
+        + Add Item
+      </button>`;
+    }
+    function renderNonCartRowsAndInit(){
+      renderNonCartRows();
+      const items=document.getElementById('edit-modal').__editItems;
+      items.forEach((it,i)=>{
+        const matched=window.__productList.find(p=>p.name===it.product||p.slug===(it.product_slug||it.slug));
+        makeProductPicker(`prod-picker-nc-${i}`,matched?.name||it.product,(name,product)=>{
+          const item=document.getElementById('edit-modal').__editItems[i];
+          item.product=name;
+          if(product?.slug)item.product_slug=product.slug;
+          const image=productImage(product);
+          if(image)item.image=image;
+          else delete item.image;
+        });
+      });
+    }
+    window.__rerenderCartRows=renderNonCartRowsAndInit;
+
+    prodSec.innerHTML=`
+      <div class="edit-label" style="margin-bottom:8px">ORDER ITEMS</div>
+      <div id="edit-cart-rows" style="margin-bottom:12px"></div>`;
+    renderNonCartRowsAndInit();
+  }
+  const shipping=o.shipping_cost||0;
+  const priceEl=document.getElementById('edit-product-price');
+  priceEl._manualEdit=false;
+  priceEl.value=(o.prix_total||0)-shipping;
+  document.getElementById('edit-shipping-price').value=shipping;
+  calcTotal();
+  const matchedWilaya=WILAYA_NAMES.find(w=>{
+    const clean=w.replace(/^\d+\s*-\s*/,'').trim().toLowerCase();
+    return clean===(o.wilaya||'').toLowerCase();
+  })||'';
+  wSel.value=matchedWilaya;
+  onEditTypeChange(o.commune,o.station_code);
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function onEditTypeChange(selectedCommune='',selectedDesk=''){
+  const type=document.getElementById('edit-type').value;
+  const communeWrap=document.getElementById('edit-commune-wrap');
+  const deskWrap=document.getElementById('edit-desk-wrap');
+  if(type==='pickup'){
+    communeWrap.style.display='none';
+    deskWrap.style.display='block';
+    populateEditDesks(selectedDesk);
+  } else {
+    communeWrap.style.display='block';
+    deskWrap.style.display='none';
+    const wilaya=document.getElementById('edit-wilaya').value;
+    populateEditCommunes(wilaya,selectedCommune);
+  }
+}
+
+function onEditWilayaChange(){
+  const type=document.getElementById('edit-type').value;
+  if(type==='home'){
+    const wilaya=document.getElementById('edit-wilaya').value;
+    populateEditCommunes(wilaya,'');
+  } else {
+    populateEditDesks('');
+  }
+}
+
+function populateEditCommunes(wilaya,selected){
+  const sel=document.getElementById('edit-commune');
+  const communes=WILAYA_DATA[wilaya]||[];
+  sel.innerHTML='<option value="">Select Commune</option>'+
+    communes.map(c=>`<option value="${esc(c)}"${c===selected?' selected':''}>${esc(c)}</option>`).join('');
+}
+
+function populateEditDesks(selectedCode){
+  const sel=document.getElementById('edit-desk');
+  if(!noestDesks){
+    sel.innerHTML='<option value="">Could not load desks - try again</option>';
+    return;
+  }
+  const wilayaKey=document.getElementById('edit-wilaya').value;
+  const num=(wilayaKey.match(/^(\d+)/)||[])[1]||'';
+  const entries=Object.entries(noestDesks);
+  const matching=entries.filter(([code])=>num&&new RegExp(`^${num}[A-Z]`).test(code));
+  const others=entries.filter(([code])=>!matching.find(([mc])=>mc===code));
+  const selectedNorm=normalizeDeskCode(selectedCode);
+  const optionHtml=([code,d])=>{
+    const optionValue=normalizeDeskCode(d?.code||code);
+    const isSelected=optionValue===selectedNorm;
+    return `<option value="${esc(optionValue)}"${isSelected?' selected':''}>${esc(d.name||optionValue)}</option>`;
+  };
+  sel.innerHTML='<option value="">Select Stop Desk</option>'+
+    (matching.length?'<optgroup label="This Wilaya">'+
+      matching.map(optionHtml).join('')+
+    '</optgroup>':'')+
+    '<optgroup label="All Desks">'+
+      others.map(optionHtml).join('')+
+    '</optgroup>';
+}
+
+function calcTotal(){
+  const editItems=document.getElementById('edit-modal').__editItems;
+  if(editItems){
+    // For cart orders: product price = sum of line_prices; update the field so operator can still override
+    const itemsTotal=editItems.reduce((s,it)=>s+Number(it.line_price||0),0);
+    const pEl=document.getElementById('edit-product-price');
+    // Only auto-fill if it hasn't been manually changed (compare to last auto value)
+    if(!pEl._manualEdit) pEl.value=itemsTotal;
+  }
+  const p=parseFloat(document.getElementById('edit-product-price').value)||0;
+  const s=parseFloat(document.getElementById('edit-shipping-price').value)||0;
+  document.getElementById('edit-total-display').textContent=`Total: ${(p+s).toLocaleString()} DZD`;
+}
+
+async function saveEdit(){
+  const o=currentOrder;
+  const type=document.getElementById('edit-type').value;
+  const wilayaKey=document.getElementById('edit-wilaya').value;
+  const wilayaClean=wilayaKey.replace(/^\d+\s*-\s*/,'').trim();
+  const commune=type==='home'?document.getElementById('edit-commune').value:'';
+  const stationCode=type==='pickup'?document.getElementById('edit-desk').value:'';
+  const productPrice=parseFloat(document.getElementById('edit-product-price').value)||0;
+  const shippingPrice=parseFloat(document.getElementById('edit-shipping-price').value)||0;
+
+  if(!wilayaClean){
+    toast('Wilaya is required',true);
+    return;
+  }
+  if(type==='home'&&!commune){
+    toast('Commune is required for home delivery',true);
+    return;
+  }
+
+  const editedItems=document.getElementById('edit-modal').__editItems||[];
+  const hasMultipleItems=editedItems.length>1;
+  const first=editedItems[0]||{};
+  const prodEl=document.getElementById('edit-product');
+  const varEl=document.getElementById('edit-variable');
+  if(prodEl) prodEl.value=first.product||'';
+  if(varEl) varEl.value=first.variant||(first.size==='L'?'40×60 cm':'30×40 cm');
+
+  const newData={
+    name:document.getElementById('edit-name').value,
+    phone:document.getElementById('edit-phone').value,
+    wilaya:wilayaClean,
+    commune,
+    type_livraison:type,
+    station_code:stationCode,
+    product:hasMultipleItems?`سلة ${editedItems.length} قطع`:(first.product||currentOrder.product||''),
+    variable:hasMultipleItems?editedItems.map(it=>it.variant||(it.size==='L'?'40×60 cm':'30×40 cm')).join(' + ').slice(0,250):(first.variant||currentOrder.variable||''),
+    shipping_cost:shippingPrice,
+    prix_total:productPrice+shippingPrice,
+    items:editedItems.length>0?editedItems:null,
+  };
+
+  // Log status changes to order_history (used by KPIs)
+  if(newData.status && newData.status !== o.status){
+    await sbFetch('order_history',{method:'POST',
+      body:JSON.stringify({
+        order_id:o.order_id,
+        old_status:o.status||'',
+        new_status:newData.status,
+        changed_by:'operator'
+    })});
+  }
+  // Log field edits to order_edits (separate table, keeps history without polluting KPIs)
+  const fields=['name','phone','wilaya','commune','product','variable','station_code','type_livraison'];
+  for(const field of fields){
+    const oldVal=String(o[field]||'').trim();
+    const newVal=String(newData[field]||'').trim();
+    if(oldVal!==newVal){
+      await sbFetch('order_edits',{method:'POST',
+        body:JSON.stringify({
+          order_id:o.order_id,
+          field_name:field,
+          old_value:oldVal,
+          new_value:newVal,
+          changed_by:'operator'
+      })});
+    }
+  }
+
+  await sbFetch(`orders?id=eq.${o.id}`,{method:'PATCH',body:JSON.stringify(newData)});
+  Object.assign(currentOrder,newData);
+  // sync the same object in the list + rebuild just its card in place (no reload, no scroll jump)
+  const listObj=allOrders.find(x=>x.id===o.id);
+  if(listObj)Object.assign(listObj,newData);
+  closeModal('edit-modal');
+  renderDetail();
+  rebuildSingleCard(o.id);
+  toast('Order updated');
+}
+
+// Rebuild one order card's full HTML in place from allOrders (preserves list scroll position).
+function rebuildSingleCard(id){
+  const card=document.getElementById(`card-${id}`);
+  if(!card)return;
+  const o=allOrders.find(x=>x.id===id);
+  if(!o)return;
+  const dt=o.created_at?toAlgeriaDate(o.created_at):null;
+  const dateStr=dt?dt.toLocaleDateString('fr-DZ',{day:'2-digit',month:'2-digit',year:'2-digit'}):'';
+  const timeStr=dt?dt.toLocaleTimeString('fr-DZ',{hour:'2-digit',minute:'2-digit',hour12:false}):'';
+  const calls=Number(o.call_count||0);
+  const isConf=currentTab==='confirmed';
+  const checked=selectedIds.has(o.id);
+  const clockSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  card.className=`order-card${checked?' selected':''}`;
+  card.style.setProperty('--strip',statusColor(o.status));
+  card.innerHTML=`
+      <div class="card-top-row">
+        <div class="card-checkbox${isConf?' visible':''}${checked?' checked':''}" onclick="toggleSelect(${o.id})"></div>
+        <div class="card-main" onclick="openDetail(${o.id})">
+          <div class="card-name-price">
+            <div class="order-name">${esc(o.name)}</div>
+            <div class="order-price">${Number(o.prix_total||0).toLocaleString()} DZD</div>
+          </div>
+          <div class="order-meta">
+            <b>${(Array.isArray(o.items)&&o.items.length)?esc(o.items.map(it=>(it.product||it.product_slug||it.slug||'')+' '+sizeLabel(it)).join('، ')):esc(o.product)+(o.variable?' - '+esc(o.variable):'')}</b><br/>
+            Location: ${o.type_livraison==='pickup'?'Stop Desk - '+esc(o.station_code||'?'):esc(o.commune)+', '+esc(o.wilaya)}<br/>
+            Phone: ${esc(o.phone)}
+          </div>
+           <span class="status-badge s-${o.status}">${statusLabel(o.status)}</span>${sourceBadge(o.attribution_source)}
+          <span class="card-time">${clockSvg}${dateStr}${timeStr?' · '+timeStr:''}</span>
+        </div>
+      </div>
+      <div class="card-note-wrap" onclick="event.stopPropagation()">
+        <div class="card-note-label">📝 Note</div>
+        <textarea class="card-note" id="note-${o.id}" placeholder="Add a note…"
+          onclick="event.stopPropagation()" onblur="saveCardNote(${o.id},this)">${esc(o.notes||'')}</textarea>
+      </div>
+      <div class="card-actions">
+        <button class="btn-wa-sm" onclick="openWhatsApp('${esc(o.phone)}')">${waIcon()}</button>
+        <button class="btn-call-sm" onclick="callCustomer('${esc(o.phone)}',${o.id})">Call${calls>0?`<span class="call-badge" id="callbadge-${o.id}">${calls}</span>`:''}</button>
+        <select class="card-status-select" onchange="updateStatusCard(this,${o.id})">
+          ${STATUSES.map(s=>`<option value="${s.k}"${o.status===s.k?' selected':''}>${s.l}</option>`).join('')}
+        </select>
+        ${o.status==='confirmed'?`<button class="btn-ship-sm" onclick="shipSingle(${o.id})">Ship</button>`:''}
+        <button class="btn-detail" onclick="openDetail(${o.id})">Details</button>
+      </div>`;
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// -- DUPLICATE DETECTION --
+function getDuplicatesForOrder(order){
+  if(!order||!order.phone)return[];
+  const cleaned=(order.phone||'').replace(/\s/g,'');
+  return allOrders.filter(o=>
+    o.id!==order.id &&
+    (o.phone||'').replace(/\s/g,'')===cleaned &&
+    !['canceled','duplicated'].includes(o.status)
+  );
+}
+function checkAndShowDupBanner(orderId){
+  const existing=document.getElementById('dup-banner-global');
+  if(existing)existing.remove();
+  if(!orderId)return;
+  const order=allOrders.find(o=>o.id===orderId);
+  if(!order)return;
+  const dups=getDuplicatesForOrder(order);
+  if(!dups.length)return;
+  const names=dups.map(d=>`${esc(d.name)} [${esc(d.status)}]`).join(', ');
+  const banner=document.createElement('div');
+  banner.id='dup-banner-global';
+  banner.className='dup-banner';
+  banner.innerHTML=`<span class="dup-banner-icon">??</span><div><b>Duplicate phone detected!</b> ${esc(order.name)}'s number also found in: ${names}. Consider marking as Duplicated.</div>`;
+  const list=document.getElementById('orders-list');
+  if(list)list.insertAdjacentElement('beforebegin',banner);
+}
+
+// ── HELPERS ──
+function statusLabel(k){return STATUSES.find(s=>s.k===k)?.l||k;}
+function statusColor(k){return STATUSES.find(s=>s.k===k)?.c||'#ff2d8e';}
+function waIcon(){return `<svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;}
+function esc(v){if(v==null)return '';return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function sourceBadge(source){const key=String(source||'unknown').toLowerCase();const label={meta:'META',tiktok:'TIKTOK',organic:'ORGANIC',direct:'DIRECT',operator:'OPERATOR',other:'OTHER',unknown:'UNKNOWN'}[key]||'UNKNOWN';return `<span class="source-badge source-${['meta','tiktok','organic','direct','operator','other'].includes(key)?key:'unknown'}">${label}</span>`;}
+function sizeLabel(it){
+  if(it&&it.size&&/^(M|L)$/i.test(it.size))return it.size.toUpperCase();
+  const norm=String((it&&(it.size||it.variant))||'').toLowerCase().replace(/سم|cm/g,'').replace(/[×*]/g,'x').replace(/\s+/g,'');
+  if(norm.includes('30x40'))return 'M';
+  if(norm.includes('40x60'))return 'L';
+  return (it&&(it.size||it.variant))||'';
+}
+let _tt;
+function toast(msg,isErr=false){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show'+(isErr?' err':'');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.className='',2500);
+}
+
+// ── EXPORT CONFIRMED ORDERS AS CLEAN XLSX FOR PRINT TOOL ──
+function exportConfirmedXLSX(){
+  const orders = allOrders.filter(o => o.status === 'confirmed');
+  if(!orders.length){ toast('No confirmed orders to export', true); return; }
+
+  // One row per product line — just what's needed for printing
+  const rows = [['Order ID', 'Product', 'Size']];
+
+  orders.forEach(o => {
+    if(Array.isArray(o.items) && o.items.length){
+      o.items.forEach(it => {
+        const name = it.product || it.product_slug || it.slug || '';
+        const sl   = sizeLabel(it);
+        const size = sl === 'M' ? '30x40 cm' : sl === 'L' ? '40x60 cm' : (it.size || it.variant || '');
+        rows.push([o.id, name, size]);
+      });
+    } else {
+      const size = o.variable && o.variable.includes('40x60') ? '40x60 cm'
+                 : o.variable && o.variable.includes('30x40') ? '30x40 cm'
+                 : (o.variable || '');
+      rows.push([o.id, o.product || '', size]);
+    }
+  });
+
+  if(typeof XLSX === 'undefined'){
+    toast('Loading export library…');
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => doExportXLSX(rows);
+    s.onerror = () => toast('Failed to load export library', true);
+    document.head.appendChild(s);
+  } else {
+    doExportXLSX(rows);
+  }
+}
+
+function doExportXLSX(rows){
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:12}, {wch:38}, {wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Confirmed');
+  XLSX.writeFile(wb, `arco_envoi_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('✅ Export downloaded!');
+}
+
+// ── Searchable product picker ──────────────────────────────────────────────
+function productImage(product){
+  const raw=product?.images;
+  const images=Array.isArray(raw)?raw:(raw?[raw]:[]);
+  const first=images[0];
+  return typeof first==='string'?first:(first?.url||first?.src||'');
+}
+function openProductImagePreview(src,alt){
+  let overlay=document.getElementById('product-image-preview');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='product-image-preview';
+    overlay.className='product-image-preview';
+    overlay.hidden=true;
+    overlay.addEventListener('click',()=>{overlay.hidden=true;});
+    const img=document.createElement('img');
+    img.addEventListener('click',event=>event.stopPropagation());
+    overlay.appendChild(img);
+    document.body.appendChild(overlay);
+  }
+  const img=overlay.querySelector('img');
+  img.src=src;img.alt=alt||'';
+  overlay.hidden=false;
+}
+function makeProductPicker(containerId, initialValue, onChange){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  const pl = (window.__productList||[]);
+  const names = pl.map(p=>p.name).filter(Boolean);
+
+  let selected = initialValue || (names[0]||'');
+
+  wrap.innerHTML =
+    '<div class="prod-picker-control"><div class="prod-picker-thumb"></div><input type="text" class="prod-search-input" autocomplete="off" placeholder="Search product…"/></div>' +
+    '<div class="prod-dropdown-list"></div>';
+
+  const input = wrap.querySelector('input');
+  const thumb = wrap.querySelector('.prod-picker-thumb');
+  const list  = wrap.querySelector('.prod-dropdown-list');
+
+  function findProduct(name){return pl.find(p=>p.name===name)||null;}
+  function updateThumb(product){
+    thumb.innerHTML='';
+    thumb.onclick=null;
+    const src=productImage(product);
+    if(!src)return;
+    const img=document.createElement('img');
+    img.src=src;img.alt='';img.loading='lazy';
+    img.onerror=()=>{thumb.innerHTML='';};
+    thumb.appendChild(img);
+    thumb.onclick=event=>{event.stopPropagation();openProductImagePreview(src,product?.name||'');};
+  }
+
+  function renderList(filter){
+    const q = (filter||'').toLowerCase();
+    const filtered = q ? pl.filter(p=>String(p.name||'').toLowerCase().includes(q)) : pl;
+    list.innerHTML = '';
+    filtered.forEach(function(product){
+      const n=product.name;
+      const item = document.createElement('div');
+      item.className = 'prod-dropdown-item' + (n===selected?' active':'');
+      const src=productImage(product);
+      if(src){
+        const img=document.createElement('img');
+        img.src=src;img.alt='';img.loading='lazy';
+        item.appendChild(img);
+      }
+      const label=document.createElement('span');
+      label.textContent=n;
+      item.appendChild(label);
+      item.addEventListener('mousedown', function(e){ e.preventDefault(); });
+      item.addEventListener('click', function(){
+        selected = n;
+        input.value = n;
+        updateThumb(product);
+        list.classList.remove('open');
+        onChange(n,product);
+      });
+      list.appendChild(item);
+    });
+  }
+
+  input.value = selected;
+  const initialProduct=findProduct(selected);
+  updateThumb(initialProduct);
+  onChange(selected,initialProduct);
+
+  input.addEventListener('focus', function(){
+    renderList(input.value);
+    list.classList.add('open');
+  });
+  input.addEventListener('input', function(){
+    renderList(input.value);
+    list.classList.add('open');
+  });
+  input.addEventListener('blur', function(){
+    setTimeout(function(){
+      list.classList.remove('open');
+      const match = pl.find(p=>String(p.name||'').toLowerCase()===input.value.toLowerCase());
+      if(match){ selected=match.name; input.value=match.name; updateThumb(match); onChange(match.name,match); }
+      else{ input.value=selected; }
+    }, 150);
+  });
+}
+</script>
+</body>
+</html>
