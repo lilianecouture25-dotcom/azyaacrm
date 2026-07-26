@@ -90,7 +90,11 @@ function normalizeWilayaKey(value) {
 }
 
 function normalizePhone(phone) {
-  return String(phone || "").replace(/\D/g, "");
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("00213")) digits = digits.slice(5);
+  else if (digits.startsWith("213")) digits = digits.slice(3);
+  if (digits.length === 9 && /^[567]/.test(digits)) digits = `0${digits}`;
+  return digits;
 }
 
 function sanitizeNoestText(value, fallback = "") {
